@@ -1,0 +1,148 @@
+import { Organization } from '../types';
+
+export const OFFICIAL_ORGANIZATIONS: Organization[] = [
+  // 지식재산
+  {
+    id: 'ORG-01',
+    category: '지식재산',
+    name: 'KIPRIS (특허정보검색서비스)',
+    purpose: '국내외 상표, 특허, 실용신안, 디자인 무료 선행기술 및 권리 검색',
+    keyTasks: ['상표 선행 검색', '동일/유사 브랜드 조회', '특허 기술 동향 조사'],
+    officialUrl: 'http://www.kipris.or.kr',
+    badge: '특허청 공인',
+  },
+  {
+    id: 'ORG-02',
+    category: '지식재산',
+    name: '특허로 (Patent.go.kr)',
+    purpose: '상표, 특허, 디자인 온라인 전자출원 및 등록료 납부 시스템',
+    keyTasks: ['상표 출원서 제출', '특허고객번호 발급', '심사 진행상황 조회'],
+    officialUrl: 'https://www.patent.go.kr',
+    badge: '정부 공식',
+  },
+  {
+    id: 'ORG-03',
+    category: '지식재산',
+    name: '한국저작권위원회 저작권등록시스템',
+    purpose: '캐릭터, 미술, 어문, 음악, 소프트웨어 저작물 공식 등록',
+    keyTasks: ['저작권 등록 신청', '저작권 양도/이전 등록', '저작권 분쟁 조정'],
+    officialUrl: 'https://www.cros.or.kr',
+    badge: '문체부 산하',
+  },
+
+  // 사업자 / 세금
+  {
+    id: 'ORG-04',
+    category: '사업자/세금',
+    name: '국세청 홈택스 (Hometax)',
+    purpose: '사업자등록, 사업용 계좌/카드 등록, 부가세·종소세 신고, 전자세금계산서',
+    keyTasks: ['사업자등록 신청', '사업용 계좌 신고', '부가가치세 신고', '종합소득세 신고', '전자세금계산서 발급'],
+    officialUrl: 'https://www.hometax.go.kr',
+    badge: '국세청 공식',
+  },
+  {
+    id: 'ORG-05',
+    category: '사업자/세금',
+    name: '정부24 (Gov.kr)',
+    purpose: '통신판매업 신고, 주민등록등본, 사업장 관련 민원 서류 발급',
+    keyTasks: ['통신판매업 신고', '지방세 납세증명서 발급', '공공 인허가 신청'],
+    officialUrl: 'https://www.gov.kr',
+    badge: '행정안전부',
+  },
+  {
+    id: 'ORG-06',
+    category: '사업자/세금',
+    name: '위택스 (Wetax)',
+    purpose: '지방세, 등록면허세(통신판매업 갱신 등), 지방소득세 신고 및 납부',
+    keyTasks: ['통신판매업 등록면허세 납부', '개인지방소득세 신고', '주민세 사업소분'],
+    officialUrl: 'https://www.wetax.go.kr',
+    badge: '행안부 지방세',
+  },
+
+  // 판매
+  {
+    id: 'ORG-07',
+    category: '판매',
+    name: '네이버 스마트스토어센터',
+    purpose: '국내 최대 검색 연동 오픈마켓 입점 및 구매안전서비스 발급',
+    keyTasks: ['구매안전서비스이용확인증 무료 출력', '스마트스토어 판매자 가입', '상품 등록 및 네이버페이 정산'],
+    officialUrl: 'https://sell.smartstore.naver.com',
+    badge: '포털 1위',
+  },
+  {
+    id: 'ORG-08',
+    category: '판매',
+    name: '쿠팡 WING (판매자센터)',
+    purpose: '국내 최대 이커머스 입점, 로켓배송/로켓그로스 풀필먼트 연동',
+    keyTasks: ['오픈마켓 판매자 등록', '로켓그로스 입고', '주/월 정산 관리'],
+    officialUrl: 'https://wing.coupang.com',
+    badge: '트래픽 1위',
+  },
+  {
+    id: 'ORG-09',
+    category: '판매',
+    name: 'S2B (한국교직원공제회 학교장터)',
+    purpose: '전국 초중고등학교 및 교육청 교구·비품 공공 지정 조달 시스템',
+    keyTasks: ['공급업체 등록', '학교 수의계약 물품 등록', '견적서 및 세금계산서 청구'],
+    officialUrl: 'https://www.s2b.kr',
+    badge: '교육기관 전용',
+  },
+
+  // 인증
+  {
+    id: 'ORG-10',
+    category: '인증',
+    name: '제품안전정보포털 (Safety Korea)',
+    purpose: 'KC 인증 대상 여부 판정, 법정 안전기준 검색, 리콜 제품 조회',
+    keyTasks: ['KC 인증 품목 검색', '어린이제품 안전기준 확인', '인증번호 유효성 검증'],
+    officialUrl: 'https://www.safetykorea.kr',
+    badge: '국가기술표준원',
+  },
+  {
+    id: 'ORG-11',
+    category: '인증',
+    name: 'KCL (한국건설생활환경시험연구원)',
+    purpose: '어린이제품, 생활용품, 완구, 교구 안전성 공인 시험 및 KC 성적서 발급',
+    keyTasks: ['유해물질(중금속/가소제) 시험', '어린이제품 안전확인 시험', 'KC 인증서 교부'],
+    officialUrl: 'https://www.kcl.re.kr',
+    badge: '공인인증기관',
+  },
+  {
+    id: 'ORG-12',
+    category: '인증',
+    name: '의약품안전나라 (식약처)',
+    purpose: '화장품책임판매업 등록, 식품제조업, 의약외품 허가 관리',
+    keyTasks: ['화장품책임판매업 등록신청', '책임판매관리자 변경신고', '원료 성분 규제 확인'],
+    officialUrl: 'https://nedrug.mfds.go.kr',
+    badge: '식약처 공식',
+  },
+
+  // 지원사업
+  {
+    id: 'ORG-13',
+    category: '지원사업',
+    name: 'K-Startup (창업지원포털)',
+    purpose: '예비창업패키지, 초기창업패키지, 청년창업사관학교 무상 정부지원금 공고',
+    keyTasks: ['정부 창업 바우처 신청', '사업화 자금 지원 공모', '창업 멘토링 매칭'],
+    officialUrl: 'https://www.k-startup.go.kr',
+    badge: '중기부 공식',
+  },
+  {
+    id: 'ORG-14',
+    category: '지원사업',
+    name: '기업마당',
+    purpose: '중소벤처기업부 및 각 지자체 판로개척, 시제품 제작 지원사업 종합 안내',
+    keyTasks: ['지자체 마케팅 지원금 검색', '수출 바우처 공고 확인', '세제 혜택 조회'],
+    officialUrl: 'https://www.bizinfo.go.kr',
+    badge: '중기부 종합포털',
+  },
+  {
+    id: 'ORG-15',
+    category: '지원사업',
+    name: '소상공인24',
+    purpose: '1인 사업자 및 소상공인 정책자금 융자, 스마트상점 지원, 경영개선',
+    keyTasks: ['소상공인 정책자금 신청', '희망리턴패키지', '소상공인 확인서 발급'],
+    officialUrl: 'https://www.sbiz24.kr',
+    badge: '소진공 공식',
+  },
+];

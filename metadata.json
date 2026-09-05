@@ -1,0 +1,6 @@
+{
+  "name": "BizFlow AtoZ",
+  "description": "아이디어에서 첫 매출 입금까지 - 대한민국 창작자, 1인 사업자, 예비창업자를 위한 실행형 사업화 프로젝트 관리 SaaS",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
