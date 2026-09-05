@@ -144,3 +144,21 @@ export interface Organization {
   officialUrl: string;
   badge: string;
 }
+
+export interface ChecklistTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface ChecklistSection {
+  id: string;
+  title: string;
+  tasks: ChecklistTask[];
+}
+
+export interface ChecklistCategory {
+  id: string;
+  title: string;
+  sections: ChecklistSection[];
+}

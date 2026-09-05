@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Project, Task, TaskStatus } from '../types';
 import { calculateProjectProgress, getTodaysTasks } from '../services/ruleEngine';
 import { AtoZProgressBar } from '../components/AtoZProgressBar';
@@ -16,7 +16,9 @@ import {
   ArrowUpRight,
   Coins,
   Package,
+  ClipboardCheck,
 } from 'lucide-react';
+import { BusinessChecklistTree } from '../components/BusinessChecklistTree';
 
 interface DashboardViewProps {
   project: Project;
@@ -31,6 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateTab,
   onQuickUpdateTaskStatus,
 }) => {
+  const [showChecklist, setShowChecklist] = useState(false);
   const stats = calculateProjectProgress(project.tasks);
   const todaysTasks = getTodaysTasks(project.tasks);
   const featuredTask = todaysTasks[0];
@@ -123,6 +126,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         tasks={project.tasks}
         onSelectStage={(catKey) => onNavigateTab('roadmap', catKey)}
       />
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowChecklist((value) => !value)}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-black transition-all border ${
+            showChecklist
+              ? 'bg-blue-600 text-white border-blue-700 shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]'
+              : 'bg-white text-slate-800 border-slate-200 hover:border-slate-900'
+          }`}
+          aria-expanded={showChecklist}
+        >
+          <ClipboardCheck className="w-4 h-4" />
+          <span>사업화 체크리스트</span>
+        </button>
+      </div>
+
+      {showChecklist && <BusinessChecklistTree projectId={project.id} />}
 
       {/* Grid: Featured Today's Action Item + Financial Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

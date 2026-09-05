@@ -3,6 +3,7 @@ import { generateTasksForProfile } from './ruleEngine';
 
 const STORAGE_KEY = 'bizflow_atoz_projects_v1';
 const ACTIVE_PROJECT_KEY = 'bizflow_atoz_active_id_v1';
+const CHECKLIST_STORAGE_PREFIX = 'bizflow_atoz_checklist_tree_v1';
 
 /**
  * Creates the initial demo project specified in Prompt Requirement 25:
@@ -224,4 +225,34 @@ export function saveSingleProject(updatedProject: Project): void {
     projects.push(updatedProject);
   }
   saveProjects(projects);
+}
+
+function getChecklistStorageKey(projectId: string): string {
+  return `${CHECKLIST_STORAGE_PREFIX}:${projectId}`;
+}
+
+export type ChecklistCompletionMap = Record<string, boolean>;
+
+export function loadChecklistCompletions(projectId: string): ChecklistCompletionMap {
+  try {
+    const raw = localStorage.getItem(getChecklistStorageKey(projectId));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return parsed as ChecklistCompletionMap;
+  } catch (e) {
+    console.error('Failed to load checklist state:', e);
+    return {};
+  }
+}
+
+export function saveChecklistCompletions(
+  projectId: string,
+  completions: ChecklistCompletionMap
+): void {
+  try {
+    localStorage.setItem(getChecklistStorageKey(projectId), JSON.stringify(completions));
+  } catch (e) {
+    console.error('Failed to save checklist state:', e);
+  }
 }
