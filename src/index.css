@@ -6,9 +6,7 @@
   --font-scale-heading: 1;
 }
 
-/* Accessibility typography scaling.
-   Small UI copy is intentionally enlarged by default because the app contains
-   many 10-12px labels and helper texts. User preferences override these vars. */
+/* Accessibility typography scaling. Small UI copy is 1.5x by default. */
 .text-\[10px\] { font-size: calc(10px * var(--font-scale-small)) !important; }
 .text-\[11px\] { font-size: calc(11px * var(--font-scale-small)) !important; }
 .text-xs { font-size: calc(0.75rem * var(--font-scale-small)) !important; line-height: 1.45 !important; }
@@ -16,12 +14,12 @@
 .text-sm { font-size: calc(0.875rem * var(--font-scale-body)) !important; line-height: 1.5 !important; }
 .text-base { font-size: calc(1rem * var(--font-scale-body)) !important; line-height: 1.5 !important; }
 
-.text-lg,
-.text-xl,
-.text-2xl,
-.text-3xl,
-.text-4xl,
-.text-5xl { font-size: calc(1em * var(--font-scale-heading)); }
+.text-lg { font-size: calc(1.125rem * var(--font-scale-heading)) !important; }
+.text-xl { font-size: calc(1.25rem * var(--font-scale-heading)) !important; }
+.text-2xl { font-size: calc(1.5rem * var(--font-scale-heading)) !important; }
+.text-3xl { font-size: calc(1.875rem * var(--font-scale-heading)) !important; }
+.text-4xl { font-size: calc(2.25rem * var(--font-scale-heading)) !important; }
+.text-5xl { font-size: calc(3rem * var(--font-scale-heading)) !important; }
 
 .preview-small { font-size: calc(10px * var(--font-scale-small)) !important; }
 .preview-body { font-size: calc(0.875rem * var(--font-scale-body)) !important; }
