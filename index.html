@@ -16,7 +16,27 @@
   </head>
   <body class="bg-[#F8FAFC] text-[#0F172A] antialiased font-sans">
     <div id="root"></div>
+    <script>
+      (() => {
+        let allowLeave = false;
+        const guardState = { bizflowExitGuard: true };
+
+        history.replaceState({ ...(history.state || {}), ...guardState }, '', location.href);
+        history.pushState({ bizflowExitGuardBuffer: true }, '', location.href);
+
+        window.addEventListener('popstate', () => {
+          if (allowLeave) return;
+
+          history.pushState({ bizflowExitGuardBuffer: true }, '', location.href);
+
+          const shouldExit = window.confirm('종료하시겠습니까?');
+          if (shouldExit) {
+            allowLeave = true;
+            history.go(-2);
+          }
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
