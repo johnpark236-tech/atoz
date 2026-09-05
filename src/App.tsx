@@ -16,18 +16,32 @@ import { FinanceView } from './views/FinanceView';
 import { OrganizationsView } from './views/OrganizationsView';
 import { TaxCalendarView } from './views/TaxCalendarView';
 import { AiAssistantView } from './views/AiAssistantView';
+import { AccountView } from './views/AccountView';
+import { PricingView } from './views/PricingView';
+import { DocumentVaultView } from './views/DocumentVaultView';
+import { AdminView } from './views/AdminView';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginModal } from './components/auth/LoginModal';
+import { SignupModal } from './components/auth/SignupModal';
+import { ForgotPasswordModal } from './components/auth/ForgotPasswordModal';
+import { DataMigrationModal } from './components/auth/DataMigrationModal';
+import { hasGuestData, isMigrationDone } from './services/migrationService';
 
-export default function App() {
+type AuthModal = 'login' | 'signup' | 'forgotPassword' | 'migration' | null;
+
+function AppInner() {
+  const { user, status } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setCurrentActiveProjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [roadmapCategoryFilter, setRoadmapCategoryFilter] = useState<string | null>(null);
 
-  // Modal and AI state
+  // Modal state
   const [modalTask, setModalTask] = useState<Task | null>(null);
   const [aiPrefillTask, setAiPrefillTask] = useState<Task | null>(null);
+  const [authModal, setAuthModal] = useState<AuthModal>(null);
 
-  // Notification Toast
+  // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -44,6 +58,17 @@ export default function App() {
       loaded.find((p) => p.id === savedActiveId)?.id || loaded[0]?.id || '';
     setCurrentActiveProjectId(targetId);
   }, []);
+
+  // Check migration on login
+  useEffect(() => {
+    if (user && status === 'authenticated') {
+      const guestData = hasGuestData();
+      const alreadyDone = isMigrationDone(user.id);
+      if (guestData && !alreadyDone) {
+        setAuthModal('migration');
+      }
+    }
+  }, [user, status]);
 
   const activeProject =
     projects.find((p) => p.id === activeProjectId) || projects[0];
@@ -96,7 +121,6 @@ export default function App() {
       prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
     );
 
-    // Also update current modal if open
     if (modalTask && modalTask.task_id === taskId) {
       setModalTask({
         ...modalTask,
@@ -161,7 +185,13 @@ export default function App() {
     setActiveTab('ai');
   };
 
-  if (!activeProject) {
+  const handleSelectTab = (tab: string, catKey?: string) => {
+    setActiveTab(tab);
+    if (catKey) setRoadmapCategoryFilter(catKey);
+    else setRoadmapCategoryFilter(null);
+  };
+
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="text-center space-y-2">
@@ -174,8 +204,52 @@ export default function App() {
     );
   }
 
+  if (!activeProject) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-3 border-stone-900 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-semibold text-stone-600">
+            프로젝트를 불러오는 중입니다...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
+      {/* Auth Modals */}
+      {authModal === 'login' && (
+        <LoginModal
+          onClose={() => setAuthModal(null)}
+          onGoSignup={() => setAuthModal('signup')}
+          onGoForgotPassword={() => setAuthModal('forgotPassword')}
+        />
+      )}
+      {authModal === 'signup' && (
+        <SignupModal
+          onClose={() => setAuthModal(null)}
+          onGoLogin={() => setAuthModal('login')}
+          onGoMigration={() => setAuthModal('migration')}
+        />
+      )}
+      {authModal === 'forgotPassword' && (
+        <ForgotPasswordModal
+          onClose={() => setAuthModal(null)}
+          onGoLogin={() => setAuthModal('login')}
+        />
+      )}
+      {authModal === 'migration' && (
+        <DataMigrationModal
+          onComplete={() => {
+            setAuthModal(null);
+            showToast('기존 데이터를 계정으로 이전했습니다.');
+          }}
+          onSkip={() => setAuthModal(null)}
+        />
+      )}
+
       {/* Global Header */}
       <Header
         projects={projects}
@@ -183,10 +257,9 @@ export default function App() {
         onSelectProject={handleSelectProject}
         onNewProject={handleNewProject}
         activeTab={activeTab}
-        onSelectTab={(tab) => {
-          setActiveTab(tab);
-          setRoadmapCategoryFilter(null);
-        }}
+        onSelectTab={handleSelectTab}
+        onOpenLogin={() => setAuthModal('login')}
+        onOpenSignup={() => setAuthModal('signup')}
       />
 
       {/* Main Content Workspace */}
@@ -242,6 +315,23 @@ export default function App() {
             onClearPrefillTask={() => setAiPrefillTask(null)}
           />
         )}
+
+        {activeTab === 'account' && (
+          <AccountView onSelectTab={handleSelectTab} />
+        )}
+
+        {activeTab === 'pricing' && (
+          <PricingView onSelectTab={handleSelectTab} />
+        )}
+
+        {activeTab === 'documents' && (
+          <DocumentVaultView
+            projectId={activeProject.id}
+            onUpgrade={() => setActiveTab('pricing')}
+          />
+        )}
+
+        {activeTab === 'admin' && <AdminView />}
       </main>
 
       {/* Task Modal Popup */}
@@ -271,12 +361,43 @@ export default function App() {
             <p className="mt-1 text-slate-500 font-medium">
               대한민국 1인 사업자·창작자·예비창업자를 위한 원스톱 사업화 파이프라인
             </p>
+            <div className="flex items-center gap-4 mt-2">
+              <button
+                onClick={() => setActiveTab('pricing')}
+                className="text-slate-400 hover:text-blue-600 transition-colors font-medium"
+              >
+                요금제
+              </button>
+              <span className="text-slate-200">|</span>
+              <button
+                className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
+                onClick={() => {}}
+              >
+                이용약관
+              </button>
+              <span className="text-slate-200">|</span>
+              <button
+                className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
+                onClick={() => {}}
+              >
+                개인정보처리방침
+              </button>
+            </div>
           </div>
           <div className="text-slate-400 text-right sm:max-w-md font-medium">
             본 서비스는 창업 실무 절차 가이드 및 시뮬레이터이며, 행정처분 및 세무 신고의 최종 법적 책임은 신청인 본인에게 있습니다.
+            {/* 운영 전 법률 검토 필요: 이용약관·개인정보처리방침 법률 전문가 검토 TODO */}
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
   );
 }

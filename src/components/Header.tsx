@@ -2,9 +2,14 @@ import React from 'react';
 import { Project } from '../types';
 import { calculateProjectProgress } from '../services/ruleEngine';
 import { FontSizeSettings } from './FontSizeSettings';
+import { useAuth } from '../contexts/AuthContext';
 import {
   PlusCircle,
   FolderKanban,
+  User,
+  LogIn,
+  Crown,
+  Shield,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -14,6 +19,8 @@ interface HeaderProps {
   onNewProject: () => void;
   activeTab: string;
   onSelectTab: (tab: string) => void;
+  onOpenLogin?: () => void;
+  onOpenSignup?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,7 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
   onNewProject,
   activeTab,
   onSelectTab,
+  onOpenLogin,
+  onOpenSignup,
 }) => {
+  const { user, status } = useAuth();
   const stats = calculateProjectProgress(activeProject.tasks);
   const totalSettled = activeProject.sales
     .filter((s) => s.status === '입금완료')
@@ -37,6 +47,9 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'organizations', label: '행정·기관 포털', icon: '🏛️' },
     { id: 'tax', label: '세무 캘린더', icon: '📅' },
     { id: 'ai', label: 'AI 창업비서', icon: '🤖' },
+    { id: 'documents', label: '문서 보관함', icon: '📁' },
+    { id: 'pricing', label: '요금제', icon: '💎' },
+    ...(user?.role === 'admin' ? [{ id: 'admin', label: '관리자', icon: '🛡️' }] : []),
   ];
 
   return (
@@ -83,6 +96,43 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             <FontSizeSettings />
+
+            {status !== 'loading' && !user && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onOpenLogin}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">로그인</span>
+                </button>
+                <button
+                  onClick={onOpenSignup}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  <span className="hidden sm:inline">회원가입</span>
+                  <span className="sm:hidden">가입</span>
+                </button>
+              </div>
+            )}
+
+            {user && (
+              <button
+                onClick={() => onSelectTab('account')}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors border border-slate-200"
+              >
+                {user.plan === 'pro' ? (
+                  <Crown className="w-4 h-4 text-yellow-500" />
+                ) : user.role === 'admin' ? (
+                  <Shield className="w-4 h-4 text-purple-500" />
+                ) : (
+                  <User className="w-4 h-4 text-slate-400" />
+                )}
+                <span className="text-xs font-bold text-slate-700 hidden sm:inline max-w-24 truncate">
+                  {user.displayName || user.email.split('@')[0]}
+                </span>
+              </button>
+            )}
 
             <button
               id="new-project-btn"
