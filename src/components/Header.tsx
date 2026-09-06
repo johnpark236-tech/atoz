@@ -33,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'dashboard', label: '대시보드', icon: '📊' },
     { id: 'roadmap', label: 'A to Z 로드맵', icon: '🗺️' },
     { id: 'wizard', label: '사업화 위저드', icon: '🪄' },
+    { id: 'market', label: 'A to Z 시장조사', icon: '🔎' },
     { id: 'finance', label: '매출·정산 관리', icon: '💰' },
     { id: 'organizations', label: '행정·기관 포털', icon: '🏛️' },
     { id: 'tax', label: '세무 캘린더', icon: '📅' },

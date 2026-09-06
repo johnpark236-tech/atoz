@@ -12,6 +12,7 @@ import { TaskModal } from './components/TaskModal';
 import { DashboardView } from './views/DashboardView';
 import { RoadmapView } from './views/RoadmapView';
 import { WizardView } from './views/WizardView';
+import { MarketResearchView } from './views/MarketResearchView';
 import { FinanceView } from './views/FinanceView';
 import { OrganizationsView } from './views/OrganizationsView';
 import { TaxCalendarView } from './views/TaxCalendarView';
@@ -221,6 +222,10 @@ export default function App() {
             onComplete={handleCompleteWizard}
             onCancel={() => setActiveTab('dashboard')}
           />
+        )}
+
+        {activeTab === 'market' && (
+          <MarketResearchView project={activeProject} />
         )}
 
         {activeTab === 'finance' && (
