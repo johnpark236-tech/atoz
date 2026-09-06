@@ -5,7 +5,6 @@ type TutorialStep = {
   title: string;
   text: string;
   selector?: string;
-  navigateTab?: string;
 };
 
 interface GuidedTutorialProps {
@@ -15,97 +14,64 @@ interface GuidedTutorialProps {
 }
 
 const STEPS: TutorialStep[] = [
-  {
-    title: 'AtoZ 따라오세요 👋',
-    text: '아무것도 몰라도 됩니다. 화면에 표시되는 손가락과 안내문만 따라오세요. 실제 버튼을 누르면 다음 단계로 자동 진행됩니다.',
-  },
-  {
-    title: '1. 새 프로젝트 만들기',
-    text: '오른쪽 위의 “새 프로젝트” 버튼을 클릭하세요. 사업 아이디어를 입력하는 위저드가 열립니다.',
-    selector: '#new-project-btn',
-  },
-  {
-    title: '2. 사업화 위저드 확인',
-    text: '상단의 “사업화 위저드” 메뉴를 클릭하세요. 프로젝트명, 아이디어, 고객, 판매채널 등을 순서대로 입력하면 됩니다.',
-    selector: '#nav-wizard',
-  },
-  {
-    title: '3. 시장조사로 아이디어 검증',
-    text: '“A to Z 시장조사”를 클릭하세요. 아이디어의 경쟁사, 시장성, 수익모델, 위험을 확인합니다.',
-    selector: '#nav-market',
-  },
-  {
-    title: '4. 해야 할 일 확인',
-    text: '“A to Z 로드맵”을 클릭하세요. 사업화에 필요한 업무를 순서대로 확인하고 하나씩 완료 처리합니다.',
-    selector: '#nav-roadmap',
-  },
-  {
-    title: '5. 공식 기관 찾기',
-    text: '“행정·기관 포털”을 클릭하세요. 특허, 세무, 인증, 지원사업의 공식기관을 찾을 수 있습니다.',
-    selector: '#nav-organizations',
-  },
-  {
-    title: '6. 판매 후 정산 관리',
-    text: '“매출·정산 관리”를 클릭하세요. 판매금액, 비용, 정산예정일과 실제 입금을 관리합니다.',
-    selector: '#nav-finance',
-  },
-  {
-    title: '7. 모르는 것은 AI에게 질문',
-    text: '“AI 창업비서”를 클릭하세요. 지금 프로젝트에 맞춰 궁금한 내용을 자연어로 질문할 수 있습니다.',
-    selector: '#nav-ai',
-  },
-  {
-    title: '완료했습니다 🎉',
-    text: '이제 AtoZ의 전체 흐름을 한 번 경험했습니다. 다시 막히면 상단의 “사용자 매뉴얼”에서 검색하거나 “따라하기”를 다시 시작하세요.',
-  },
+  { title: 'AtoZ 따라오세요 👋', text: '아무것도 몰라도 됩니다. 화면에 표시되는 손가락과 안내문만 따라오세요. 실제 버튼을 누르면 다음 단계로 자동 진행됩니다.' },
+  { title: '1. 새 프로젝트 만들기', text: '오른쪽 위의 “새 프로젝트” 버튼을 클릭하세요. 사업 아이디어를 입력하는 위저드가 열립니다.', selector: '#new-project-btn' },
+  { title: '2. 사업화 위저드 확인', text: '상단의 “사업화 위저드” 메뉴를 클릭하세요. 프로젝트명, 아이디어, 고객, 판매채널 등을 순서대로 입력하면 됩니다.', selector: '#nav-wizard' },
+  { title: '3. 시장조사로 아이디어 검증', text: '“A to Z 시장조사”를 클릭하세요. 아이디어의 경쟁사, 시장성, 수익모델, 위험을 확인합니다.', selector: '#nav-market' },
+  { title: '4. 해야 할 일 확인', text: '“A to Z 로드맵”을 클릭하세요. 사업화에 필요한 업무를 순서대로 확인하고 하나씩 완료 처리합니다.', selector: '#nav-roadmap' },
+  { title: '5. 공식 기관 찾기', text: '“행정·기관 포털”을 클릭하세요. 특허, 세무, 인증, 지원사업의 공식기관을 찾을 수 있습니다.', selector: '#nav-organizations' },
+  { title: '6. 판매 후 정산 관리', text: '“매출·정산 관리”를 클릭하세요. 판매금액, 비용, 정산예정일과 실제 입금을 관리합니다.', selector: '#nav-finance' },
+  { title: '7. 모르는 것은 AI에게 질문', text: '“AI 창업비서”를 클릭하세요. 지금 프로젝트에 맞춰 궁금한 내용을 자연어로 질문할 수 있습니다.', selector: '#nav-ai' },
+  { title: '완료했습니다 🎉', text: '이제 AtoZ의 전체 흐름을 한 번 경험했습니다. 다시 막히면 상단의 “사용자 매뉴얼”에서 검색하거나 “따라하기”를 다시 시작하세요.' },
 ];
 
-export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({ open, onClose, onNavigate }) => {
+export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({ open, onClose }) => {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const step = STEPS[index];
 
   useEffect(() => {
-    if (!open) return;
-    setIndex(0);
+    if (open) setIndex(0);
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    if (step.navigateTab) onNavigate(step.navigateTab);
 
     const updateRect = () => {
-      if (!step.selector) return setRect(null);
+      if (!step.selector) {
+        setRect(null);
+        return;
+      }
       const el = document.querySelector(step.selector) as HTMLElement | null;
-      if (!el) return setRect(null);
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-      window.setTimeout(() => setRect(el.getBoundingClientRect()), 180);
+      if (!el) {
+        setRect(null);
+        return;
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      window.setTimeout(() => setRect(el.getBoundingClientRect()), 120);
     };
 
     updateRect();
     window.addEventListener('resize', updateRect);
     window.addEventListener('scroll', updateRect, true);
 
-    let target: HTMLElement | null = null;
+    const target = step.selector ? (document.querySelector(step.selector) as HTMLElement | null) : null;
     const advance = () => setIndex((i) => Math.min(i + 1, STEPS.length - 1));
-    if (step.selector) {
-      target = document.querySelector(step.selector) as HTMLElement | null;
-      target?.addEventListener('click', advance, { once: true });
-    }
+    target?.addEventListener('click', advance, { once: true });
 
     return () => {
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);
       target?.removeEventListener('click', advance);
     };
-  }, [open, index, step.selector, step.navigateTab, onNavigate]);
+  }, [open, index, step.selector]);
 
   const cardStyle = useMemo<React.CSSProperties>(() => {
-    if (!rect) return { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' };
+    if (!rect) return { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(360px, calc(100vw - 24px))' };
     const width = Math.min(360, window.innerWidth - 24);
     const left = Math.min(Math.max(12, rect.left + rect.width / 2 - width / 2), window.innerWidth - width - 12);
-    const topCandidate = rect.bottom + 18;
-    const top = topCandidate + 220 < window.innerHeight ? topCandidate : Math.max(12, rect.top - 230);
+    const below = rect.bottom + 18;
+    const top = below + 230 < window.innerHeight ? below : Math.max(12, rect.top - 240);
     return { left, top, width };
   }, [rect]);
 
@@ -113,13 +79,12 @@ export const GuidedTutorial: React.FC<GuidedTutorialProps> = ({ open, onClose, o
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
-      <div className="absolute inset-0 bg-slate-950/60 pointer-events-auto" onClick={() => {}} />
+      <div className="absolute inset-0 bg-slate-950/55 pointer-events-none" />
 
       {rect && (
         <>
           <div className="fixed rounded-2xl border-4 border-yellow-300 shadow-[0_0_0_6px_rgba(37,99,235,0.55),0_0_40px_rgba(250,204,21,0.9)] pointer-events-none animate-pulse" style={{ left: rect.left - 8, top: rect.top - 8, width: rect.width + 16, height: rect.height + 16 }} />
           <div className="fixed text-5xl z-[102] pointer-events-none drop-shadow-lg animate-bounce" style={{ left: Math.max(8, rect.left + rect.width / 2 - 20), top: Math.max(8, rect.top - 58) }}>👇</div>
-          <div className="fixed z-[103] pointer-events-auto" style={{ left: rect.left - 12, top: rect.top - 12, width: rect.width + 24, height: rect.height + 24 }} />
         </>
       )}
 
