@@ -20,6 +20,7 @@ import { AccountView } from './views/AccountView';
 import { PricingView } from './views/PricingView';
 import { DocumentVaultView } from './views/DocumentVaultView';
 import { AdminView } from './views/AdminView';
+import { LegalView } from './views/LegalView';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginModal } from './components/auth/LoginModal';
 import { SignupModal } from './components/auth/SignupModal';
@@ -332,6 +333,9 @@ function AppInner() {
         )}
 
         {activeTab === 'admin' && <AdminView />}
+
+        {activeTab === 'terms' && <LegalView type="terms" />}
+        {activeTab === 'privacy' && <LegalView type="privacy" />}
       </main>
 
       {/* Task Modal Popup */}
@@ -371,14 +375,14 @@ function AppInner() {
               <span className="text-slate-200">|</span>
               <button
                 className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
-                onClick={() => {}}
+                onClick={() => setActiveTab('terms')}
               >
                 이용약관
               </button>
               <span className="text-slate-200">|</span>
               <button
                 className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
-                onClick={() => {}}
+                onClick={() => setActiveTab('privacy')}
               >
                 개인정보처리방침
               </button>

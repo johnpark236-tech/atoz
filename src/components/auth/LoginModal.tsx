@@ -37,15 +37,25 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onClose, onGoSignup, onG
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-modal-title"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="bg-white rounded-2xl shadow-2xl border-2 border-slate-900 w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div>
-            <h2 className="text-xl font-black tracking-tight text-slate-900">로그인</h2>
+            <h2 id="login-modal-title" className="text-xl font-black tracking-tight text-slate-900">로그인</h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">BizFlow AtoZ에 오신 것을 환영합니다</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-            <X className="w-4 h-4 text-slate-500" />
+          <button
+            onClick={onClose}
+            aria-label="로그인 창 닫기"
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-blue-500"
+          >
+            <X className="w-4 h-4 text-slate-500" aria-hidden="true" />
           </button>
         </div>
 
