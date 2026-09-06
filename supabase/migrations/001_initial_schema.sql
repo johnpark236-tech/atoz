@@ -105,7 +105,9 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 -- =====================
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE SET NULL,
+  -- user_id is nullable: financial records must be preserved after account deletion (legal/accounting requirement).
+  -- ON DELETE SET NULL sets user_id to NULL when the profile is deleted, keeping the payment record intact.
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   plan TEXT NOT NULL CHECK (plan IN ('free', 'pro')),
   amount INTEGER NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'KRW',
@@ -124,7 +126,8 @@ CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id);
 -- =====================
 CREATE TABLE IF NOT EXISTS refund_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE SET NULL,
+  -- user_id is nullable: same reasoning as payments — refund records must survive account deletion.
+  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   payment_id UUID NOT NULL REFERENCES payments(id),
   reason TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),

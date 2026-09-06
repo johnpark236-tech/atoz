@@ -8,10 +8,13 @@ import {
   setActiveProjectId,
 } from './services/storage';
 import { Header } from './components/Header';
+import { GuidedTutorial } from './components/GuidedTutorial';
 import { TaskModal } from './components/TaskModal';
 import { DashboardView } from './views/DashboardView';
 import { RoadmapView } from './views/RoadmapView';
 import { WizardView } from './views/WizardView';
+import { MarketResearchView } from './views/MarketResearchView';
+import { UserGuideView } from './views/UserGuideView';
 import { FinanceView } from './views/FinanceView';
 import { OrganizationsView } from './views/OrganizationsView';
 import { TaxCalendarView } from './views/TaxCalendarView';
@@ -36,13 +39,11 @@ function AppInner() {
   const [activeProjectId, setCurrentActiveProjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [roadmapCategoryFilter, setRoadmapCategoryFilter] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
-  // Modal state
   const [modalTask, setModalTask] = useState<Task | null>(null);
   const [aiPrefillTask, setAiPrefillTask] = useState<Task | null>(null);
   const [authModal, setAuthModal] = useState<AuthModal>(null);
-
-  // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -50,17 +51,14 @@ function AppInner() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Initialize projects on mount
   useEffect(() => {
     const loaded = loadProjects();
     setProjects(loaded);
     const savedActiveId = getActiveProjectId();
-    const targetId =
-      loaded.find((p) => p.id === savedActiveId)?.id || loaded[0]?.id || '';
+    const targetId = loaded.find((p) => p.id === savedActiveId)?.id || loaded[0]?.id || '';
     setCurrentActiveProjectId(targetId);
   }, []);
 
-  // Check migration on login
   useEffect(() => {
     if (user && status === 'authenticated') {
       const guestData = hasGuestData();
@@ -71,17 +69,20 @@ function AppInner() {
     }
   }, [user, status]);
 
-  const activeProject =
-    projects.find((p) => p.id === activeProjectId) || projects[0];
+  const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
 
   const handleSelectProject = (id: string) => {
     setCurrentActiveProjectId(id);
     setActiveProjectId(id);
   };
 
-  const handleNewProject = () => {
-    setActiveTab('wizard');
+  const handleSelectTab = (tab: string, catKey?: string) => {
+    setActiveTab(tab);
+    if (catKey) setRoadmapCategoryFilter(catKey);
+    else setRoadmapCategoryFilter(null);
   };
+
+  const handleNewProject = () => setActiveTab('wizard');
 
   const handleCompleteWizard = (newProject: Project) => {
     const updated = [newProject, ...projects];
@@ -92,92 +93,52 @@ function AppInner() {
     showToast(`"${newProject.title}" 맞춤형 로드맵이 생성되었습니다!`);
   };
 
-  const handleUpdateTaskStatus = (
-    taskId: string,
-    status: TaskStatus,
-    memo?: string
-  ) => {
+  const handleUpdateTaskStatus = (taskId: string, status: TaskStatus, memo?: string) => {
     if (!activeProject) return;
-
-    const updatedTasks = activeProject.tasks.map((t) => {
-      if (t.task_id === taskId) {
-        return {
-          ...t,
-          status,
-          memo: memo !== undefined ? memo : t.memo,
-          completed_date:
-            status === '완료' ? new Date().toISOString().split('T')[0] : t.completed_date,
-        };
-      }
-      return t;
-    });
-
-    const updatedProject = {
-      ...activeProject,
-      tasks: updatedTasks,
-    };
-
-    saveSingleProject(updatedProject);
-    setProjects((prev) =>
-      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    const updatedTasks = activeProject.tasks.map((t) =>
+      t.task_id === taskId
+        ? {
+            ...t,
+            status,
+            memo: memo !== undefined ? memo : t.memo,
+            completed_date: status === '완료' ? new Date().toISOString().split('T')[0] : t.completed_date,
+          }
+        : t
     );
-
+    const updatedProject = { ...activeProject, tasks: updatedTasks };
+    saveSingleProject(updatedProject);
+    setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
     if (modalTask && modalTask.task_id === taskId) {
-      setModalTask({
-        ...modalTask,
-        status,
-        memo: memo !== undefined ? memo : modalTask.memo,
-      });
+      setModalTask({ ...modalTask, status, memo: memo !== undefined ? memo : modalTask.memo });
     }
-
     showToast(`[${taskId}] 상태가 "${status}"(으)로 업데이트되었습니다.`);
   };
 
   const handleAddSale = (sale: SaleRecord) => {
     if (!activeProject) return;
-    const updatedSales = [sale, ...activeProject.sales];
-    const updatedProject = {
-      ...activeProject,
-      sales: updatedSales,
-    };
+    const updatedProject = { ...activeProject, sales: [sale, ...activeProject.sales] };
     saveSingleProject(updatedProject);
-    setProjects((prev) =>
-      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    );
+    setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
     showToast('새로운 주문/정산 내역이 등록되었습니다.');
   };
 
-  const handleUpdateSaleStatus = (
-    saleId: string,
-    status: SaleRecord['status']
-  ) => {
+  const handleUpdateSaleStatus = (saleId: string, status: SaleRecord['status']) => {
     if (!activeProject) return;
     const updatedSales = activeProject.sales.map((s) => {
-      if (s.id === saleId) {
-        return {
-          ...s,
-          status,
-          depositDate:
-            status === '입금완료'
-              ? new Date().toISOString().split('T')[0]
-              : s.depositDate,
-          actualDepositAmount:
-            status === '입금완료'
-              ? s.actualDepositAmount || s.settlementExpectedAmount
-              : s.actualDepositAmount,
-        };
-      }
-      return s;
+      if (s.id !== saleId) return s;
+      return {
+        ...s,
+        status,
+        depositDate: status === '입금완료' ? new Date().toISOString().split('T')[0] : s.depositDate,
+        actualDepositAmount:
+          status === '입금완료'
+            ? s.actualDepositAmount || s.settlementExpectedAmount
+            : s.actualDepositAmount,
+      };
     });
-
-    const updatedProject = {
-      ...activeProject,
-      sales: updatedSales,
-    };
+    const updatedProject = { ...activeProject, sales: updatedSales };
     saveSingleProject(updatedProject);
-    setProjects((prev) =>
-      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    );
+    setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
     showToast(`정산 상태가 "${status}"(으)로 갱신되었습니다.`);
   };
 
@@ -186,20 +147,12 @@ function AppInner() {
     setActiveTab('ai');
   };
 
-  const handleSelectTab = (tab: string, catKey?: string) => {
-    setActiveTab(tab);
-    if (catKey) setRoadmapCategoryFilter(catKey);
-    else setRoadmapCategoryFilter(null);
-  };
-
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-3 border-stone-900 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-semibold text-stone-600">
-            BizFlow AtoZ를 불러오는 중입니다...
-          </p>
+          <p className="text-sm font-semibold text-stone-600">BizFlow AtoZ를 불러오는 중입니다...</p>
         </div>
       </div>
     );
@@ -210,9 +163,7 @@ function AppInner() {
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="text-center space-y-2">
           <div className="w-8 h-8 border-3 border-stone-900 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm font-semibold text-stone-600">
-            프로젝트를 불러오는 중입니다...
-          </p>
+          <p className="text-sm font-semibold text-stone-600">프로젝트를 불러오는 중입니다...</p>
         </div>
       </div>
     );
@@ -251,7 +202,6 @@ function AppInner() {
         />
       )}
 
-      {/* Global Header */}
       <Header
         projects={projects}
         activeProject={activeProject}
@@ -259,11 +209,11 @@ function AppInner() {
         onNewProject={handleNewProject}
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
+        onStartTutorial={() => setTutorialOpen(true)}
         onOpenLogin={() => setAuthModal('login')}
         onOpenSignup={() => setAuthModal('signup')}
       />
 
-      {/* Main Content Workspace */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'dashboard' && (
           <DashboardView
@@ -273,9 +223,7 @@ function AppInner() {
               setActiveTab(tab);
               if (catKey) setRoadmapCategoryFilter(catKey);
             }}
-            onQuickUpdateTaskStatus={(taskId, status) =>
-              handleUpdateTaskStatus(taskId, status)
-            }
+            onQuickUpdateTaskStatus={(taskId, status) => handleUpdateTaskStatus(taskId, status)}
           />
         )}
 
@@ -284,18 +232,15 @@ function AppInner() {
             tasks={activeProject.tasks}
             initialCategory={roadmapCategoryFilter}
             onOpenTaskModal={(task) => setModalTask(task)}
-            onQuickUpdateStatus={(taskId, status) =>
-              handleUpdateTaskStatus(taskId, status)
-            }
+            onQuickUpdateStatus={(taskId, status) => handleUpdateTaskStatus(taskId, status)}
           />
         )}
 
         {activeTab === 'wizard' && (
-          <WizardView
-            onComplete={handleCompleteWizard}
-            onCancel={() => setActiveTab('dashboard')}
-          />
+          <WizardView onComplete={handleCompleteWizard} onCancel={() => setActiveTab('dashboard')} />
         )}
+
+        {activeTab === 'market' && <MarketResearchView project={activeProject} />}
 
         {activeTab === 'finance' && (
           <FinanceView
@@ -306,7 +251,6 @@ function AppInner() {
         )}
 
         {activeTab === 'organizations' && <OrganizationsView />}
-
         {activeTab === 'tax' && <TaxCalendarView />}
 
         {activeTab === 'ai' && (
@@ -317,13 +261,15 @@ function AppInner() {
           />
         )}
 
-        {activeTab === 'account' && (
-          <AccountView onSelectTab={handleSelectTab} />
+        {activeTab === 'guide' && (
+          <UserGuideView
+            onStartTutorial={() => setTutorialOpen(true)}
+            onNavigate={handleSelectTab}
+          />
         )}
 
-        {activeTab === 'pricing' && (
-          <PricingView onSelectTab={handleSelectTab} />
-        )}
+        {activeTab === 'account' && <AccountView onSelectTab={handleSelectTab} />}
+        {activeTab === 'pricing' && <PricingView onSelectTab={handleSelectTab} />}
 
         {activeTab === 'documents' && (
           <DocumentVaultView
@@ -333,12 +279,10 @@ function AppInner() {
         )}
 
         {activeTab === 'admin' && <AdminView />}
-
         {activeTab === 'terms' && <LegalView type="terms" />}
         {activeTab === 'privacy' && <LegalView type="privacy" />}
       </main>
 
-      {/* Task Modal Popup */}
       <TaskModal
         task={modalTask}
         onClose={() => setModalTask(null)}
@@ -346,7 +290,8 @@ function AppInner() {
         onConsultAi={handleConsultAi}
       />
 
-      {/* Floating Toast Notification */}
+      <GuidedTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#0F172A] text-white text-xs font-bold px-5 py-3.5 rounded-full shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] border-2 border-[#0F172A] animate-in fade-in slide-in-from-bottom-2 flex items-center space-x-2.5">
           <span className="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-black">✓</span>
@@ -354,7 +299,6 @@ function AppInner() {
         </div>
       )}
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-8 mt-12 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
@@ -362,35 +306,18 @@ function AppInner() {
               <span className="font-black text-blue-600 tracking-tighter text-sm italic">BizFlow AtoZ</span>
               <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">아이디어투머니</span>
             </div>
-            <p className="mt-1 text-slate-500 font-medium">
-              대한민국 1인 사업자·창작자·예비창업자를 위한 원스톱 사업화 파이프라인
-            </p>
+            <p className="mt-1 text-slate-500 font-medium">대한민국 1인 사업자·창작자·예비창업자를 위한 원스톱 사업화 파이프라인</p>
             <div className="flex items-center gap-4 mt-2">
-              <button
-                onClick={() => setActiveTab('pricing')}
-                className="text-slate-400 hover:text-blue-600 transition-colors font-medium"
-              >
-                요금제
-              </button>
+              <button onClick={() => setActiveTab('pricing')} className="text-slate-400 hover:text-blue-600 transition-colors font-medium">요금제</button>
               <span className="text-slate-200">|</span>
-              <button
-                className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
-                onClick={() => setActiveTab('terms')}
-              >
-                이용약관
-              </button>
+              <button onClick={() => setActiveTab('terms')} className="text-slate-400 hover:text-slate-600 transition-colors font-medium">이용약관</button>
               <span className="text-slate-200">|</span>
-              <button
-                className="text-slate-400 hover:text-slate-600 transition-colors font-medium"
-                onClick={() => setActiveTab('privacy')}
-              >
-                개인정보처리방침
-              </button>
+              <button onClick={() => setActiveTab('privacy')} className="text-slate-400 hover:text-slate-600 transition-colors font-medium">개인정보처리방침</button>
             </div>
           </div>
           <div className="text-slate-400 text-right sm:max-w-md font-medium">
+            {/* 운영 전 법률 검토 필요: 이용약관·개인정보처리방침 임시 문안 */}
             본 서비스는 창업 실무 절차 가이드 및 시뮬레이터이며, 행정처분 및 세무 신고의 최종 법적 책임은 신청인 본인에게 있습니다.
-            {/* 운영 전 법률 검토 필요: 이용약관·개인정보처리방침 법률 전문가 검토 TODO */}
           </div>
         </div>
       </footer>
