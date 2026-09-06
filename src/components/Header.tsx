@@ -2,7 +2,7 @@ import React from 'react';
 import { Project } from '../types';
 import { calculateProjectProgress } from '../services/ruleEngine';
 import { FontSizeSettings } from './FontSizeSettings';
-import { PlusCircle, FolderKanban, BookOpen, MousePointerClick } from 'lucide-react';
+import { PlusCircle, FolderKanban } from 'lucide-react';
 
 interface HeaderProps {
   projects: Project[];
@@ -29,15 +29,15 @@ export const Header: React.FC<HeaderProps> = ({
     .reduce((acc, curr) => acc + (curr.actualDepositAmount || curr.settlementExpectedAmount), 0);
 
   const tabs = [
-    { id: 'dashboard', label: '대시보드', icon: '📊' },
-    { id: 'roadmap', label: 'A to Z 로드맵', icon: '🗺️' },
-    { id: 'wizard', label: '사업화 위저드', icon: '🪄' },
-    { id: 'market', label: 'A to Z 시장조사', icon: '🔎' },
-    { id: 'finance', label: '매출·정산 관리', icon: '💰' },
-    { id: 'organizations', label: '행정·기관 포털', icon: '🏛️' },
-    { id: 'tax', label: '세무 캘린더', icon: '📅' },
-    { id: 'ai', label: 'AI 창업비서', icon: '🤖' },
-    { id: 'guide', label: '사용자 매뉴얼', icon: '📘' },
+    { id: 'dashboard', label: '대시보드' },
+    { id: 'roadmap', label: 'A to Z 로드맵' },
+    { id: 'wizard', label: '사업화 위저드' },
+    { id: 'market', label: 'A to Z 시장조사' },
+    { id: 'finance', label: '매출·정산 관리' },
+    { id: 'organizations', label: '행정·기관 포털' },
+    { id: 'tax', label: '세무 캘린더' },
+    { id: 'ai', label: 'AI 창업비서' },
+    { id: 'guide', label: '사용자 매뉴얼' },
   ];
 
   return (
@@ -57,10 +57,10 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button id="manual-btn" onClick={() => onSelectTab('guide')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-slate-50" title="검색 가능한 사용자 매뉴얼">
-              <BookOpen className="w-4 h-4 text-blue-600" /><span className="hidden xl:inline">사용자 매뉴얼</span>
+              <span aria-hidden="true">📘</span><span className="hidden xl:inline">사용자 매뉴얼</span>
             </button>
             <button id="tutorial-btn" onClick={onStartTutorial} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-amber-300 bg-amber-50 text-xs font-black text-amber-800 hover:bg-amber-100" title="처음부터 따라하는 초보자 튜토리얼">
-              <MousePointerClick className="w-4 h-4" /><span className="hidden xl:inline">따라하기</span>
+              <span aria-hidden="true">👉</span><span className="hidden xl:inline">따라하기</span>
             </button>
 
             <div className="relative hidden sm:flex items-center">
@@ -86,7 +86,8 @@ export const Header: React.FC<HeaderProps> = ({
               const isActive = activeTab === tab.id;
               return (
                 <button key={tab.id} id={`nav-${tab.id}`} onClick={() => onSelectTab(tab.id)} className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-50 text-blue-700 font-black shadow-xs ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
-                  <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`}></span><span>{tab.label}</span>
+                  <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -96,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">진행률</span>
               <span className="font-black text-blue-600 text-sm tracking-tight">{stats.percentage}%</span>
-              <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${stats.percentage}%` }}></div></div>
+              <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${stats.percentage}%` }} /></div>
             </div>
             <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">정산 입금</span>
