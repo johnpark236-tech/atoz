@@ -104,7 +104,10 @@ export default function App() {
         ...s,
         status,
         depositDate: status === '입금완료' ? new Date().toISOString().split('T')[0] : s.depositDate,
-        actualDepositAmount: status === '입금완료' ? s.actualDepositAmount || s.settlementExpectedAmount : s.actualDepositAmount,
+        actualDepositAmount:
+          status === '입금완료'
+            ? s.actualDepositAmount || s.settlementExpectedAmount
+            : s.actualDepositAmount,
       };
     });
     const updatedProject = { ...activeProject, sales: updatedSales };
@@ -153,6 +156,7 @@ export default function App() {
             onQuickUpdateTaskStatus={(taskId, status) => handleUpdateTaskStatus(taskId, status)}
           />
         )}
+
         {activeTab === 'roadmap' && (
           <RoadmapView
             tasks={activeProject.tasks}
@@ -161,22 +165,48 @@ export default function App() {
             onQuickUpdateStatus={(taskId, status) => handleUpdateTaskStatus(taskId, status)}
           />
         )}
-        {activeTab === 'wizard' && <WizardView onComplete={handleCompleteWizard} onCancel={() => setActiveTab('dashboard')} />}
+
+        {activeTab === 'wizard' && (
+          <WizardView onComplete={handleCompleteWizard} onCancel={() => setActiveTab('dashboard')} />
+        )}
+
         {activeTab === 'market' && <MarketResearchView project={activeProject} />}
-        {activeTab === 'finance' && <FinanceView project={activeProject} onAddSale={handleAddSale} onUpdateSaleStatus={handleUpdateSaleStatus} />}
+
+        {activeTab === 'finance' && (
+          <FinanceView
+            project={activeProject}
+            onAddSale={handleAddSale}
+            onUpdateSaleStatus={handleUpdateSaleStatus}
+          />
+        )}
+
         {activeTab === 'organizations' && <OrganizationsView />}
         {activeTab === 'tax' && <TaxCalendarView />}
+
         {activeTab === 'ai' && (
-          <AiAssistantView project={activeProject} prefillTask={aiPrefillTask} onClearPrefillTask={() => setAiPrefillTask(null)} />
+          <AiAssistantView
+            project={activeProject}
+            prefillTask={aiPrefillTask}
+            onClearPrefillTask={() => setAiPrefillTask(null)}
+          />
         )}
+
         {activeTab === 'guide' && (
-          <UserGuideView onStartTutorial={() => setTutorialOpen(true)} onNavigate={navigateTab} />
+          <UserGuideView
+            onStartTutorial={() => setTutorialOpen(true)}
+            onNavigate={navigateTab}
+          />
         )}
       </main>
 
-      <TaskModal task={modalTask} onClose={() => setModalTask(null)} onUpdateStatus={handleUpdateTaskStatus} onConsultAi={handleConsultAi} />
+      <TaskModal
+        task={modalTask}
+        onClose={() => setModalTask(null)}
+        onUpdateStatus={handleUpdateTaskStatus}
+        onConsultAi={handleConsultAi}
+      />
 
-      <GuidedTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} onNavigate={navigateTab} />
+      <GuidedTutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
 
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#0F172A] text-white text-xs font-bold px-5 py-3.5 rounded-full shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] border-2 border-[#0F172A] animate-in fade-in slide-in-from-bottom-2 flex items-center space-x-2.5">
@@ -194,7 +224,9 @@ export default function App() {
             </div>
             <p className="mt-1 text-slate-500 font-medium">대한민국 1인 사업자·창작자·예비창업자를 위한 원스톱 사업화 파이프라인</p>
           </div>
-          <div className="text-slate-400 text-right sm:max-w-md font-medium">본 서비스는 창업 실무 절차 가이드 및 시뮬레이터이며, 행정처분 및 세무 신고의 최종 법적 책임은 신청인 본인에게 있습니다.</div>
+          <div className="text-slate-400 text-right sm:max-w-md font-medium">
+            본 서비스는 창업 실무 절차 가이드 및 시뮬레이터이며, 행정처분 및 세무 신고의 최종 법적 책임은 신청인 본인에게 있습니다.
+          </div>
         </div>
       </footer>
     </div>
