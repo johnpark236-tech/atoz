@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Project, Task } from '../types';
+import { aiProvider } from '../services/ai/aiProvider';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Bot,
   Send,
-  Sparkles,
-  HelpCircle,
-  FileText,
   AlertTriangle,
-  Building,
-  Coins,
-  Clock,
   RotateCcw,
+  Crown,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface AiAssistantViewProps {
@@ -24,6 +22,9 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
+  requiresExpertReview?: boolean;
+  expertBadge?: string;
+  suggestedActions?: string[];
 }
 
 const PRESET_QUESTIONS = [
@@ -40,6 +41,8 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   prefillTask,
   onClearPrefillTask,
 }) => {
+  const { user } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'msg-welcome',
@@ -50,6 +53,10 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   // If opened from a task modal, prefill and auto-ask
   useEffect(() => {
@@ -79,29 +86,20 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ai/consult', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: textToSend,
-          task: specificTask,
-          projectContext: {
-            title: project.title,
-            profile: project.profile,
-          },
-        }),
+      const response = await aiProvider.chat({
+        project,
+        task: specificTask,
+        userQuery: textToSend,
       });
 
-      if (!res.ok) {
-        throw new Error('API 응답 실패');
-      }
-
-      const data = await res.json();
       const assistantMessage: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: data.reply || '답변을 불러오지 못했습니다.',
+        content: response.reply,
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        requiresExpertReview: response.requiresExpertReview,
+        expertBadge: response.expertBadge,
+        suggestedActions: response.suggestedActions,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -110,8 +108,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
       const errorMessage: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content:
-          '네트워크 또는 서버 응답에 일시적 지연이 발생했습니다. 다시 시도해 주세요.',
+        content: '네트워크 또는 서버 응답에 일시적 지연이 발생했습니다. 다시 시도해 주세요.',
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -193,21 +190,40 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
               </div>
             )}
 
-            <div
-              className={`max-w-2xl rounded-[24px] p-5 text-xs sm:text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-slate-900 text-white shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] rounded-tr-xs font-medium'
-                  : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-xs whitespace-pre-wrap font-medium shadow-xs'
-              }`}
-            >
-              {msg.content}
+            <div className="max-w-2xl space-y-2">
               <div
-                className={`text-[10px] mt-2 font-mono font-bold ${
-                  msg.role === 'user' ? 'text-slate-400 text-right' : 'text-slate-400'
+                className={`rounded-[24px] p-5 text-xs sm:text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-slate-900 text-white shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] rounded-tr-xs font-medium'
+                    : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-xs whitespace-pre-wrap font-medium shadow-xs'
                 }`}
               >
-                {msg.createdAt}
+                {msg.content}
+                <div
+                  className={`text-[10px] mt-2 font-mono font-bold ${
+                    msg.role === 'user' ? 'text-slate-400 text-right' : 'text-slate-400'
+                  }`}
+                >
+                  {msg.createdAt}
+                </div>
               </div>
+              {/* Expert review badge */}
+              {msg.role === 'assistant' && msg.requiresExpertReview && msg.expertBadge && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-700">
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                  ⚠️ {msg.expertBadge} — 최종 판단은 전문가와 확인하세요.
+                </div>
+              )}
+              {/* Suggested actions */}
+              {msg.role === 'assistant' && msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {msg.suggestedActions.map((action, i) => (
+                    <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-bold">
+                      → {action}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -227,6 +243,7 @@ export const AiAssistantView: React.FC<AiAssistantViewProps> = ({
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Bar */}
