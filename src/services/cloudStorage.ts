@@ -19,9 +19,12 @@ export type CloudSyncStatus =
   | 'error'
   | 'local_only';
 
+export const DEFAULT_CLOUD_ENDPOINT =
+  'https://script.google.com/macros/s/AKfycbymdhsa5hvNIOymglFn1mzBUytV08jsFlXfsQO-dgTsAknTT4_iMTUZ-jhkLmj0FsdohA/exec';
+
 /**
  * Returns the currently configured Google Apps Script Web App URL.
- * Checks runtime localStorage override first, then Vite build environment variable.
+ * Checks runtime localStorage override first, then Vite build environment variable, then default endpoint.
  */
 export function getCloudEndpoint(): string {
   try {
@@ -32,7 +35,7 @@ export function getCloudEndpoint(): string {
   } catch {
     // localStorage might fail in restricted environments
   }
-  return (import.meta.env.VITE_GOOGLE_SHEETS_API_URL || '').trim();
+  return (import.meta.env.VITE_GOOGLE_SHEETS_API_URL || DEFAULT_CLOUD_ENDPOINT).trim();
 }
 
 /**
