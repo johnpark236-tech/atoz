@@ -251,7 +251,6 @@ export default function App() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-blue-600 tracking-tighter text-sm italic">BizFlow AtoZ</span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">아이디어투머니</span>
             </div>
             <p className="mt-1 text-slate-500 font-medium">대한민국 1인 사업자·창작자·예비창업자를 위한 원스톱 사업화 파이프라인</p>
           </div>

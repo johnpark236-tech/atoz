@@ -124,15 +124,13 @@ export const Header: React.FC<HeaderProps> = ({
       <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between min-h-18 py-2 gap-3">
-            <div className="flex items-center space-x-3 cursor-pointer select-none min-w-0" onClick={() => onSelectTab('dashboard')}>
-              <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] font-black text-xl italic tracking-tighter shrink-0">BZ</div>
-              <div className="min-w-0">
-                <div className="flex items-center space-x-2 min-w-0">
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 italic leading-none whitespace-nowrap">BizFlow AtoZ</h1>
-                  <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-full hidden md:inline">아이디어투머니</span>
-                </div>
-                <p className="text-[11px] text-slate-500 font-bold mt-1 tracking-tight hidden sm:block">아이디어에서 첫 매출 정산금 입금까지 원스톱 가이드</p>
-              </div>
+            <div className="flex flex-col justify-center cursor-pointer select-none min-w-0" onClick={() => onSelectTab('dashboard')}>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 italic leading-none whitespace-nowrap">
+                BizFlow AtoZ
+              </h1>
+              <p className="text-[11px] text-slate-500 font-bold mt-1 tracking-tight hidden sm:block">
+                아이디어에서 첫 매출 정산금 입금까지 원스톱 가이드
+              </p>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
