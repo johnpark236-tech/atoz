@@ -6,6 +6,7 @@ import {
   saveProjects,
   getActiveProjectId,
   setActiveProjectId,
+  initAppState,
 } from './services/storage';
 import { Header } from './components/Header';
 import { GuidedTutorial } from './components/GuidedTutorial';
@@ -37,11 +38,31 @@ export default function App() {
   };
 
   useEffect(() => {
-    const loaded = loadProjects();
-    setProjects(loaded);
+    // 1. Instant load from local cache for zero delay
+    const initial = loadProjects();
+    setProjects(initial);
     const savedActiveId = getActiveProjectId();
-    const targetId = loaded.find((p) => p.id === savedActiveId)?.id || loaded[0]?.id || '';
+    const targetId = initial.find((p) => p.id === savedActiveId)?.id || initial[0]?.id || '';
     setCurrentActiveProjectId(targetId);
+
+    // 2. Asynchronous Cloud Source of Truth Check & Migration
+    async function loadCloudState() {
+      try {
+        const result = await initAppState();
+        if (result.projects && result.projects.length > 0) {
+          setProjects(result.projects);
+          const activeId =
+            result.projects.find((p) => p.id === result.activeProjectId)?.id ||
+            result.projects[0]?.id ||
+            '';
+          setCurrentActiveProjectId(activeId);
+        }
+      } catch (e) {
+        console.warn('Initial cloud sync error:', e);
+      }
+    }
+
+    loadCloudState();
   }, []);
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0];
@@ -49,6 +70,15 @@ export default function App() {
   const handleSelectProject = (id: string) => {
     setCurrentActiveProjectId(id);
     setActiveProjectId(id);
+  };
+
+  const handleStateReloaded = (newProjects: Project[], newActiveId: string) => {
+    setProjects(newProjects);
+    if (newActiveId) {
+      setCurrentActiveProjectId(newActiveId);
+    } else if (newProjects.length > 0) {
+      setCurrentActiveProjectId(newProjects[0].id);
+    }
   };
 
   const navigateTab = (tab: string) => {
@@ -142,6 +172,7 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={navigateTab}
         onStartTutorial={() => setTutorialOpen(true)}
+        onStateReloaded={handleStateReloaded}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">

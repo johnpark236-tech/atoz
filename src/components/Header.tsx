@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
 import { calculateProjectProgress } from '../services/ruleEngine';
 import { FontSizeSettings } from './FontSizeSettings';
-import { PlusCircle, FolderKanban } from 'lucide-react';
+import { CloudSyncModal } from './CloudSyncModal';
+import {
+  PlusCircle,
+  FolderKanban,
+  Cloud,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react';
+import {
+  getCloudStatus,
+  getCloudStatusMessage,
+  subscribeCloudStatus,
+} from '../services/storage';
+import { CloudSyncStatus } from '../services/cloudStorage';
 
 interface HeaderProps {
   projects: Project[];
@@ -12,6 +26,7 @@ interface HeaderProps {
   activeTab: string;
   onSelectTab: (tab: string) => void;
   onStartTutorial: () => void;
+  onStateReloaded?: (projects: Project[], activeId: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,7 +37,20 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onSelectTab,
   onStartTutorial,
+  onStateReloaded,
 }) => {
+  const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus>(getCloudStatus());
+  const [cloudMessage, setCloudMessage] = useState<string>(getCloudStatusMessage());
+  const [cloudModalOpen, setCloudModalOpen] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeCloudStatus((status, message) => {
+      setCloudStatus(status);
+      if (message) setCloudMessage(message);
+    });
+    return unsub;
+  }, []);
+
   const stats = calculateProjectProgress(activeProject.tasks);
   const totalSettled = activeProject.sales
     .filter((s) => s.status === '입금완료')
@@ -40,72 +68,133 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'guide', label: '사용자 매뉴얼' },
   ];
 
+  const renderCloudBadge = () => {
+    switch (cloudStatus) {
+      case 'saving':
+      case 'loading':
+        return (
+          <button
+            onClick={() => setCloudModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors"
+            title={cloudMessage || '클라우드 동기화 중'}
+          >
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+            <span className="hidden xl:inline text-[11px]">저장 중...</span>
+          </button>
+        );
+      case 'saved':
+        return (
+          <button
+            onClick={() => setCloudModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors"
+            title={cloudMessage || 'Google Sheets 클라우드 동기화됨'}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="hidden xl:inline text-[11px]">클라우드 연결</span>
+          </button>
+        );
+      case 'error':
+        return (
+          <button
+            onClick={() => setCloudModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors"
+            title={cloudMessage || '클라우드 저장 실패 (로컬에 임시 저장됨)'}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden xl:inline text-[11px]">저장 실패</span>
+          </button>
+        );
+      case 'local_only':
+      default:
+        return (
+          <button
+            onClick={() => setCloudModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-slate-600 text-xs font-bold hover:bg-slate-100 transition-colors"
+            title="Google Sheets 클라우드 연동 설정 열기"
+          >
+            <Cloud className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden xl:inline text-[11px]">클라우드 설정</span>
+          </button>
+        );
+    }
+  };
+
   return (
-    <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between min-h-18 py-2 gap-3">
-          <div className="flex items-center space-x-3 cursor-pointer select-none min-w-0" onClick={() => onSelectTab('dashboard')}>
-            <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] font-black text-xl italic tracking-tighter shrink-0">BZ</div>
-            <div className="min-w-0">
-              <div className="flex items-center space-x-2 min-w-0">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 italic leading-none whitespace-nowrap">BizFlow AtoZ</h1>
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-full hidden md:inline">아이디어투머니</span>
-              </div>
-              <p className="text-[11px] text-slate-500 font-bold mt-1 tracking-tight hidden sm:block">아이디어에서 첫 매출 정산금 입금까지 원스톱 가이드</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button id="manual-btn" onClick={() => onSelectTab('guide')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-slate-50" title="검색 가능한 사용자 매뉴얼">
-              <span aria-hidden="true">📘</span><span className="hidden xl:inline">사용자 매뉴얼</span>
-            </button>
-            <button id="tutorial-btn" onClick={onStartTutorial} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-amber-300 bg-amber-50 text-xs font-black text-amber-800 hover:bg-amber-100" title="처음부터 따라하는 초보자 튜토리얼">
-              <span aria-hidden="true">👉</span><span className="hidden xl:inline">따라하기</span>
-            </button>
-
-            <div className="relative hidden sm:flex items-center">
-              <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2 hover:border-slate-400 transition-colors">
-                <FolderKanban className="w-4 h-4 text-slate-400" />
-                <select id="project-select" aria-label="사업 프로젝트 선택" value={activeProject.id} onChange={(e) => onSelectProject(e.target.value)} className="bg-transparent text-xs sm:text-sm font-black text-slate-900 focus:outline-hidden cursor-pointer tracking-tight max-w-44">
-                  {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-                </select>
+    <>
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between min-h-18 py-2 gap-3">
+            <div className="flex items-center space-x-3 cursor-pointer select-none min-w-0" onClick={() => onSelectTab('dashboard')}>
+              <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] font-black text-xl italic tracking-tighter shrink-0">BZ</div>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tighter text-blue-600 italic leading-none whitespace-nowrap">BizFlow AtoZ</h1>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-full hidden md:inline">아이디어투머니</span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-bold mt-1 tracking-tight hidden sm:block">아이디어에서 첫 매출 정산금 입금까지 원스톱 가이드</p>
               </div>
             </div>
 
-            <FontSizeSettings />
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {renderCloudBadge()}
 
-            <button id="new-project-btn" onClick={onNewProject} className="inline-flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-black rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] hover:scale-[1.02] active:scale-[0.98]">
-              <PlusCircle className="w-4 h-4 text-blue-400" /><span className="hidden lg:inline">새 프로젝트</span>
-            </button>
-          </div>
-        </div>
+              <button id="manual-btn" onClick={() => onSelectTab('guide')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-200 bg-white text-xs font-black text-slate-700 hover:bg-slate-50" title="검색 가능한 사용자 매뉴얼">
+                <span aria-hidden="true">📘</span><span className="hidden xl:inline">사용자 매뉴얼</span>
+              </button>
+              <button id="tutorial-btn" onClick={onStartTutorial} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-amber-300 bg-amber-50 text-xs font-black text-amber-800 hover:bg-amber-100" title="처음부터 따라하는 초보자 튜토리얼">
+                <span aria-hidden="true">👉</span><span className="hidden xl:inline">따라하기</span>
+              </button>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between py-2 border-t border-slate-100 gap-3">
-          <nav className="flex space-x-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button key={tab.id} id={`nav-${tab.id}`} onClick={() => onSelectTab(tab.id)} className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-50 text-blue-700 font-black shadow-xs ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
-                  <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+              <div className="relative hidden sm:flex items-center">
+                <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-2xl px-3.5 py-2 hover:border-slate-400 transition-colors">
+                  <FolderKanban className="w-4 h-4 text-slate-400" />
+                  <select id="project-select" aria-label="사업 프로젝트 선택" value={activeProject.id} onChange={(e) => onSelectProject(e.target.value)} className="bg-transparent text-xs sm:text-sm font-black text-slate-900 focus:outline-hidden cursor-pointer tracking-tight max-w-44">
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </div>
+              </div>
 
-          <div className="flex items-center space-x-3 text-xs overflow-x-auto pb-1 md:pb-0">
-            <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">진행률</span>
-              <span className="font-black text-blue-600 text-sm tracking-tight">{stats.percentage}%</span>
-              <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${stats.percentage}%` }} /></div>
-            </div>
-            <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">정산 입금</span>
-              <span className="font-black text-emerald-600 text-sm tracking-tight">₩{totalSettled.toLocaleString('ko-KR')}</span>
+              <FontSizeSettings />
+
+              <button id="new-project-btn" onClick={onNewProject} className="inline-flex items-center space-x-2 px-4 py-2 text-xs sm:text-sm font-black rounded-full bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] hover:scale-[1.02] active:scale-[0.98]">
+                <PlusCircle className="w-4 h-4 text-blue-400" /><span className="hidden lg:inline">새 프로젝트</span>
+              </button>
             </div>
           </div>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between py-2 border-t border-slate-100 gap-3">
+            <nav className="flex space-x-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button key={tab.id} id={`nav-${tab.id}`} onClick={() => onSelectTab(tab.id)} className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-50 text-blue-700 font-black shadow-xs ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
+                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="flex items-center space-x-3 text-xs overflow-x-auto pb-1 md:pb-0">
+              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">진행률</span>
+                <span className="font-black text-blue-600 text-sm tracking-tight">{stats.percentage}%</span>
+                <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden hidden sm:block"><div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${stats.percentage}%` }} /></div>
+              </div>
+              <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 whitespace-nowrap">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">정산 입금</span>
+                <span className="font-black text-emerald-600 text-sm tracking-tight">₩{totalSettled.toLocaleString('ko-KR')}</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <CloudSyncModal
+        open={cloudModalOpen}
+        onClose={() => setCloudModalOpen(false)}
+        onStateReloaded={onStateReloaded}
+      />
+    </>
   );
 };
