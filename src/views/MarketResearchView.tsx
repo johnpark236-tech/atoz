@@ -7,10 +7,13 @@ import {
   Search,
   Sparkles,
   AlertTriangle,
-  Network,
-  Globe2,
   MapPin,
   ArrowRight,
+  ExternalLink,
+  Globe,
+  Layers,
+  Clock,
+  Check,
 } from 'lucide-react';
 import { LocationAnalysisView } from './LocationAnalysisView';
 
@@ -38,6 +41,23 @@ interface ResearchForm {
   resources: string;
   successGoal: string;
   other: string;
+}
+
+interface MarketResearchSource {
+  title: string;
+  url: string;
+  domain: string;
+}
+
+interface MarketResearchResponse {
+  report: string;
+  source: string;
+  grounded?: boolean;
+  model?: string;
+  searchedAt?: string;
+  searchQueries?: string[];
+  sources?: MarketResearchSource[];
+  warnings?: string[];
 }
 
 const CUSTOMER_MODELS = [
@@ -212,16 +232,6 @@ Z. Zero-Bias Verdict — 최종 점수표와 GO / CONDITIONAL GO / PIVOT / NO-GO
 - 추천/노출 흐름
 - 최종 소비자 행동의 피드백 루프
 
-B2B2C 예시:
-[지역 사업자/브랜드]
-  ↓ 상품·재고·프로모션
-[플랫폼/AI 추천]
-  ↓ 개인화 추천
-[최종 소비자]
-  ↓ 클릭·방문·구매
-[성과 데이터]
-  ↺ 사업자와 플랫폼으로 피드백
-
 [최종 점수표]
 100점 만점으로 다음을 평가하십시오.
 - 문제 강도 10
@@ -256,7 +266,6 @@ B2B2C 예시:
 
 export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
   project,
-  onProjectUpdated,
   initialSubTab = 'idea',
   activeTabKey,
   onSubTabChange,
@@ -280,7 +289,8 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
     other: '',
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [report, setReport] = useState('');
+  const [loadingStep, setLoadingStep] = useState('');
+  const [researchResult, setResearchResult] = useState<MarketResearchResponse | null>(null);
   const [fallbackMode, setFallbackMode] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -302,8 +312,17 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
   const runResearch = async () => {
     if (!form.ideaName.trim() || !form.ideaSummary.trim()) return;
     setIsLoading(true);
-    setReport('');
+    setResearchResult(null);
     setFallbackMode(false);
+    setLoadingStep('Google 실시간 웹 검색 및 최신 시장 출처 탐색 중...');
+
+    const timer1 = setTimeout(() => {
+      setLoadingStep('경쟁사·수익모델·정부 정책 및 규제 데이터 크로스체크 중...');
+    }, 7000);
+
+    const timer2 = setTimeout(() => {
+      setLoadingStep('A to Z 26개 항목 종합 시장조사 보고서 및 흐름도 작성 중...');
+    }, 18000);
 
     const configuredEndpoint = import.meta.env.VITE_MARKET_RESEARCH_API_URL as string | undefined;
     const endpoints = [configuredEndpoint, '/api/market-research'].filter(Boolean) as string[];
@@ -311,10 +330,14 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
     let lastError: unknown = null;
 
     for (const endpoint of endpoints) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
+
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             prompt,
             form,
@@ -330,17 +353,35 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
           }),
         });
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) throw new Error(`API unavailable: ${response.status}`);
         const data = await response.json();
         if (!data?.report) throw new Error('Empty market research response');
-        setReport(data.report);
+
+        setResearchResult({
+          report: data.report,
+          source: data.source || 'gemini-google-search',
+          grounded: Boolean(data.grounded),
+          model: data.model,
+          searchedAt: data.searchedAt,
+          searchQueries: data.searchQueries || [],
+          sources: data.sources || [],
+          warnings: data.warnings || [],
+        });
+
+        clearTimeout(timer1);
+        clearTimeout(timer2);
         setIsLoading(false);
         return;
       } catch (error) {
+        clearTimeout(timeoutId);
         lastError = error;
       }
     }
 
+    clearTimeout(timer1);
+    clearTimeout(timer2);
     console.warn('Market research API unavailable; prompt fallback enabled.', lastError);
     setFallbackMode(true);
     setIsLoading(false);
@@ -419,11 +460,11 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
             </div>
 
             <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
-              시장규모·경쟁사·고객·수익모델·규제를 분석합니다.
+              Google Search 실시간 웹검색으로 시장규모·경쟁사·고객·수익모델·규제를 분석합니다.
             </p>
 
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {['B2C·B2B·B2B2C', '경쟁사 탐색', '수익모델 검증', '규제·리스크'].map((tag) => (
+              {['Google 실시간 검색', 'B2C·B2B·B2B2C', '경쟁사 탐색', '수익모델 검증', '규제·리스크'].map((tag) => (
                 <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
                   {tag}
                 </span>
@@ -471,33 +512,26 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">
-                    GIS & Building BigData
+                    Location & Commercial GIS
                   </span>
                   <h3 className="text-lg sm:text-xl font-black text-slate-900">점포·상권 분석</h3>
                 </div>
               </div>
-              {subTab === 'location' ? (
+              {subTab === 'location' && (
                 <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   선택됨
-                </span>
-              ) : (
-                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-xs animate-pulse">
-                  신규 기능
                 </span>
               )}
             </div>
 
             <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
-              주소만 입력하면 건물용도·주변점포·경쟁상권·입지조건을 분석합니다.
+              입점할 주소를 입력하면 건축물대장·토지이용계획·경쟁점포·배후상권을 실시간 분석합니다.
             </p>
 
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {['주소 검색', '건축물 용도', '반경 500m 상권', '경쟁 점포', '실데이터 분석'].map((badge) => (
-                <span
-                  key={badge}
-                  className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"
-                >
-                  {badge}
+              {['VWorld PNU 실연동', '건축HUB 대장', '소진공 상권분석', '동종업종 반경분석'].map((tag) => (
+                <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                  {tag}
                 </span>
               ))}
             </div>
@@ -512,211 +546,293 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
               }}
               className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
                 subTab === 'location'
-                  ? 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-emerald-50 text-emerald-900 hover:bg-slate-900 hover:text-white'
               }`}
             >
-              <span>주소로 상권 분석하기</span>
+              <span>점포·상권분석 시작</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
+      {/* SubTab Content */}
       {subTab === 'location' ? (
-        <LocationAnalysisView project={project} onProjectUpdated={onProjectUpdated} />
+        <LocationAnalysisView />
       ) : (
         <>
-          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-200 pb-6">
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
-                  <BarChart3 className="w-3.5 h-3.5" /> A to Z Market Research
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-black mb-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  실시간 웹검색 시장조사 연결 지원
                 </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-3 tracking-tight">
-              아이디어 시장조사
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1 max-w-3xl">
-              B2C·B2B뿐 아니라 B2B2C·B2G·B2G2C·B2B SaaS·API까지 분석합니다. 연결된 시장조사 API가 있으면 경쟁사와 최신 자료를 직접 찾고, API가 없으면 동일한 조사 지시가 담긴 상세 프롬프트를 제공합니다.
-            </p>
-          </div>
-          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl p-3 max-w-sm">
-            <strong className="text-slate-900 flex items-center gap-1">
-              <Globe2 className="w-3.5 h-3.5" /> API 자동조사 지원
-            </strong>
-            <span className="block mt-1">
-              VITE_MARKET_RESEARCH_API_URL이 연결되어 있으면 해당 API를 우선 사용하고, 없으면 기본 /api/market-research를 시도합니다.
-            </span>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-5 mt-6">
-          <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
-            <label className="block space-y-2">
-              <span className="text-xs font-black text-slate-800">아이디어 / 프로젝트명 *</span>
-              <input
-                value={form.ideaName}
-                onChange={(e) => update('ideaName', e.target.value)}
-                className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:bg-white focus:border-slate-900 focus:outline-hidden"
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-xs font-black text-slate-800">목표 시장 / 지역</span>
-              <input
-                value={form.marketRegion}
-                onChange={(e) => update('marketRegion', e.target.value)}
-                placeholder="예: 대한민국, 천안 우선 후 전국"
-                className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:bg-white focus:border-slate-900 focus:outline-hidden"
-              />
-            </label>
-          </div>
-
-          <div className="lg:col-span-2">
-            {textField(
-              'ideaSummary',
-              '핵심 아이디어 설명 *',
-              '무엇을 누구에게 어떤 방식으로 제공하는지 적어주세요.',
-              3
-            )}
-          </div>
-
-          <div className="lg:col-span-2 rounded-[28px] border border-blue-200 bg-blue-50/60 p-5">
-            <div className="flex items-start gap-3">
-              <Network className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-black text-slate-900">목표 고객 / 사업모델 선택</h3>
-                <p className="text-xs text-slate-600 font-bold mt-1">
-                  복수 선택 가능합니다. 모르겠으면 선택하지 않아도 AI가 적합한 구조를 판별합니다.
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                  A to Z 시장조사 질문지
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1">
+                  Google Search 실시간 검색을 통해 2026년 최신 시장지표, 경쟁사, 규제 현황을 A~Z 26개 항목으로 종합 분석합니다.
                 </p>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-4">
-              {CUSTOMER_MODELS.map((model) => {
-                const selected = form.targetModels.includes(model.id);
-                return (
-                  <button
-                    key={model.id}
-                    type="button"
-                    onClick={() => toggleTargetModel(model.id)}
-                    className={`text-left rounded-2xl border p-3.5 transition-all ${
-                      selected
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)]'
-                        : 'bg-white text-slate-800 border-slate-200 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-black">{model.label}</span>
-                      <span className="text-sm">{selected ? '✓' : '+'}</span>
-                    </div>
-                    <p className={`text-[11px] font-bold mt-1.5 ${selected ? 'text-slate-300' : 'text-slate-500'}`}>
-                      {model.description}
-                    </p>
-                  </button>
-                );
-              })}
+
+            <div className="grid lg:grid-cols-2 gap-4">
+              {textField('ideaName', '아이디어 / 프로젝트명 *', '예: TodayPick — 오늘뭐입지 AI 코디 플랫폼')}
+              {textField(
+                'ideaSummary',
+                '핵심 아이디어 요약 *',
+                '예: 날씨/TPO/체형/퍼스널컬러 기반 패션 코디 추천 및 지역 오프라인 옷가게 재고 실시간 연동',
+                3
+              )}
+
+              <div className="lg:col-span-2 space-y-2">
+                <span className="text-xs font-black text-slate-800">
+                  고객 / 사업 모델 선택 (복수 선택 가능)
+                </span>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {CUSTOMER_MODELS.map((model) => {
+                    const selected = form.targetModels.includes(model.id);
+                    return (
+                      <button
+                        key={model.id}
+                        type="button"
+                        onClick={() => toggleTargetModel(model.id)}
+                        className={`text-left rounded-2xl border p-3.5 transition-all ${
+                          selected
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)]'
+                            : 'bg-white text-slate-800 border-slate-200 hover:border-blue-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-black">{model.label}</span>
+                          <span className="text-sm">{selected ? '✓' : '+'}</span>
+                        </div>
+                        <p className={`text-[11px] font-bold mt-1.5 ${selected ? 'text-slate-300' : 'text-slate-500'}`}>
+                          {model.description}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {textField('problem', '해결하려는 문제', '고객이 현재 겪는 불편, 비용, 시간 낭비, 기존 방식의 문제')}
+              {textField(
+                'targetCustomer',
+                '상세 목표 고객',
+                '예: 지역 패션매장 + 30~50대 소비자, 지자체 + 시민, 학교 + 학부모'
+              )}
+              {textField(
+                'businessModel',
+                '예상 수익모델',
+                '예: 소비자 무료 + 사업자 월 구독 + 구매전환 수수료 + B2G 라이선스'
+              )}
+              {textField(
+                'priceModel',
+                '가격 / 과금 아이디어',
+                '예: 소비자 무료, 사업자 월 29,000원, 거래 3%, 지자체 연간 라이선스'
+              )}
+              {textField(
+                'competitors',
+                '알고 있는 경쟁사 / 대체재',
+                '모르면 비워두세요. Google Search 실시간 검색으로 AI가 직접 탐색합니다.'
+              )}
+              {textField(
+                'differentiation',
+                '우리가 생각하는 차별점',
+                '기존 서비스와 다른 점, 지역 네트워크, 데이터, 추천엔진, 유통, 공공연계 등'
+              )}
+              {textField('technology', '핵심 기술 / 데이터', 'AI, API, OD 공공데이터, 날씨, 위치, 재고, 앱, 추천엔진 등')}
+              {textField('regulation', '예상 규제 / 인허가', '개인정보, 위치정보, 광고표시, 전자상거래, 공공조달 등')}
+              {textField('resources', '현재 보유 자원 / 역량', '개발역량, 고객, 지역사업자 네트워크, 데이터, 특허, 자금, 파트너 등')}
+              {textField('successGoal', '성공 목표', '예: 6개월 내 지역매장 100곳 + MAU 1만명 + 첫 B2G PoC')}
+              <div className="lg:col-span-2">
+                {textField(
+                  'other',
+                  '기타 — 추가 아이디어 / 반드시 조사할 내용',
+                  '예: TodayPick/오늘뭐입지처럼 사업자→플랫폼→소비자의 B2B2C 구조가 타당한지, 지역 패션매장의 재고와 소비자 구매를 연결할 수 있는지 조사',
+                  4
+                )}
+              </div>
             </div>
-          </div>
 
-          {textField('problem', '해결하려는 문제', '고객이 현재 겪는 불편, 비용, 시간 낭비, 기존 방식의 문제')}
-          {textField(
-            'targetCustomer',
-            '상세 목표 고객',
-            '예: 지역 패션매장 + 30~50대 소비자, 지자체 + 시민, 학교 + 학부모'
-          )}
-          {textField(
-            'businessModel',
-            '예상 수익모델',
-            '예: 소비자 무료 + 사업자 월 구독 + 구매전환 수수료 + B2G 라이선스'
-          )}
-          {textField(
-            'priceModel',
-            '가격 / 과금 아이디어',
-            '예: 소비자 무료, 사업자 월 29,000원, 거래 3%, 지자체 연간 라이선스'
-          )}
-          {textField(
-            'competitors',
-            '알고 있는 경쟁사 / 대체재',
-            '모르면 비워두세요. API가 연결되어 있으면 AI가 직접 검색하도록 요청합니다.'
-          )}
-          {textField(
-            'differentiation',
-            '우리가 생각하는 차별점',
-            '기존 서비스와 다른 점, 지역 네트워크, 데이터, 추천엔진, 유통, 공공연계 등'
-          )}
-          {textField('technology', '핵심 기술 / 데이터', 'AI, API, OD 공공데이터, 날씨, 위치, 재고, 앱, 추천엔진 등')}
-          {textField('regulation', '예상 규제 / 인허가', '개인정보, 위치정보, 광고표시, 전자상거래, 공공조달 등')}
-          {textField('resources', '현재 보유 자원 / 역량', '개발역량, 고객, 지역사업자 네트워크, 데이터, 특허, 자금, 파트너 등')}
-          {textField('successGoal', '성공 목표', '예: 6개월 내 지역매장 100곳 + MAU 1만명 + 첫 B2G PoC')}
-          <div className="lg:col-span-2">
-            {textField(
-              'other',
-              '기타 — 추가 아이디어 / 반드시 조사할 내용',
-              '예: TodayPick/오늘뭐입지처럼 사업자→플랫폼→소비자의 B2B2C 구조가 타당한지, 지역 패션매장의 재고와 소비자 구매를 연결할 수 있는지 조사',
-              4
-            )}
-          </div>
-        </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={runResearch}
+                disabled={isLoading || !form.ideaName.trim() || !form.ideaSummary.trim()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-full text-sm font-black shadow-[3px_3px_0px_0px_rgba(37,99,235,1)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
+              >
+                {isLoading ? (
+                  <Sparkles className="w-4 h-4 animate-pulse text-blue-400" />
+                ) : (
+                  <Search className="w-4 h-4 text-blue-400" />
+                )}
+                {isLoading ? '실시간 시장조사 보고서 생성 중...' : 'A to Z 시장조사 시작'}
+              </button>
 
-        <button
-          type="button"
-          onClick={runResearch}
-          disabled={isLoading || !form.ideaName.trim() || !form.ideaSummary.trim()}
-          className="mt-7 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-full text-sm font-black shadow-[3px_3px_0px_0px_rgba(37,99,235,1)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100"
-        >
-          {isLoading ? (
-            <Sparkles className="w-4 h-4 animate-pulse" />
-          ) : (
-            <Search className="w-4 h-4 text-blue-400" />
-          )}
-          {isLoading ? '최신 시장·경쟁사를 조사하는 중...' : 'A to Z 시장조사 시작'}
-        </button>
-      </section>
-
-      {report && (
-        <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8">
-          <h3 className="text-xl font-black text-slate-900 mb-4">시장조사 결과</h3>
-          <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700 font-medium">
-            {report}
-          </div>
-        </section>
-      )}
-
-      {fallbackMode && (
-        <section className="bg-amber-50 rounded-[32px] border-2 border-amber-400 p-6 sm:p-8 space-y-5">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
-            <div>
-              <h3 className="font-black text-slate-900">
-                시장조사 API가 연결되어 있지 않습니다. 상세 프롬프트 모드로 전환했습니다.
-              </h3>
-              <p className="text-xs text-slate-600 font-bold mt-1">
-                아래 프롬프트에는 B2C·B2B·B2B2C·B2G·B2G2C 분석, Payer/User/Beneficiary 구분, 경쟁사 직접검색, 공급자/소비자 확보전략까지 포함되어 있습니다. ChatGPT, Gemini 또는 Claude의 웹 검색/Deep Research 기능에 붙여 넣으면 됩니다.
-              </p>
+              {isLoading && (
+                <div className="mt-4 p-4 rounded-2xl bg-blue-50 border border-blue-200 flex items-center gap-3 animate-pulse">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span className="text-xs font-bold text-blue-900">{loadingStep}</span>
+                </div>
+              )}
             </div>
-          </div>
+          </section>
 
-          <button
-            onClick={copyPrompt}
-            className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-full text-xs font-black shadow-[2px_2px_0px_0px_rgba(245,158,11,1)]"
-          >
-            {copied ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            ) : (
-              <Clipboard className="w-4 h-4 text-blue-400" />
-            )}
-            {copied ? '프롬프트 복사 완료' : '확장형 A to Z 시장조사 프롬프트 복사'}
-          </button>
+          {/* Research Report Section */}
+          {researchResult && (
+            <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8 space-y-6">
+              {/* Metadata Badges Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {researchResult.grounded ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black">
+                        <Check className="w-3.5 h-3.5" />
+                        Google Search 실시간 검색 완료
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-black">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        AI 시장조사 보고서
+                      </span>
+                    )}
 
-          <details className="bg-white border border-amber-200 rounded-2xl p-4">
-            <summary className="cursor-pointer text-xs font-black text-slate-800">
-              프롬프트 전체 보기
-            </summary>
-            <pre className="mt-4 whitespace-pre-wrap text-[11px] leading-5 text-slate-600 font-mono max-h-[600px] overflow-y-auto">
-              {prompt}
-            </pre>
-          </details>
-        </section>
-      )}
+                    {researchResult.model && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-bold">
+                        <Layers className="w-3 h-3" />
+                        {researchResult.model}
+                      </span>
+                    )}
+
+                    {researchResult.searchedAt && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-medium">
+                        <Clock className="w-3 h-3" />
+                        {new Date(researchResult.searchedAt).toLocaleTimeString('ko-KR')}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 pt-1">
+                    {form.ideaName} — A to Z 시장조사 결과
+                  </h3>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copyPrompt}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-black transition-colors"
+                >
+                  {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Clipboard className="w-3.5 h-3.5" />}
+                  {copied ? '프롬프트 복사됨' : '프롬프트 복사'}
+                </button>
+              </div>
+
+              {/* Search Queries Executed */}
+              {researchResult.searchQueries && researchResult.searchQueries.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-slate-700">
+                    <Search className="w-3.5 h-3.5 text-blue-600" />
+                    실시간 Google 검색 질의어 ({researchResult.searchQueries.length}건)
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {researchResult.searchQueries.map((q, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700"
+                      >
+                        {q}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Markdown Report Content */}
+              <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700 font-medium">
+                {researchResult.report}
+              </div>
+
+              {/* Search Grounding Sources Section */}
+              {researchResult.sources && researchResult.sources.length > 0 && (
+                <div className="border-t border-slate-200 pt-6 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-blue-600" />
+                    <h4 className="text-sm font-black text-slate-900">
+                      실시간 조사 출처 및 참고 웹사이트 ({researchResult.sources.length}개)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">
+                    본 조사는 Google Search Grounding을 통해 실시간으로 수집된 공식 웹사이트 및 언론/통계 자료를 바탕으로 작성되었습니다.
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-2.5 pt-2">
+                    {researchResult.sources.map((src, idx) => (
+                      <a
+                        key={idx}
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-start justify-between gap-2 p-3 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left"
+                      >
+                        <div className="space-y-1 overflow-hidden">
+                          <span className="inline-block text-[10px] font-black px-2 py-0.5 rounded bg-white text-blue-700 border border-slate-200">
+                            {src.domain}
+                          </span>
+                          <p className="text-xs font-black text-slate-800 group-hover:text-blue-900 truncate">
+                            {src.title}
+                          </p>
+                          <p className="text-[10px] font-medium text-slate-400 truncate">
+                            {src.url}
+                          </p>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0 mt-1" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Fallback Mode Section */}
+          {fallbackMode && (
+            <section className="bg-amber-50 rounded-[32px] border-2 border-amber-400 p-6 sm:p-8 space-y-5">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
+                <div>
+                  <h3 className="font-black text-slate-900">
+                    실시간 시장조사 API가 준비되지 않아 프롬프트 모드로 전환했습니다.
+                  </h3>
+                  <p className="text-xs text-slate-600 font-bold mt-1">
+                    아래 프롬프트에는 B2C·B2B·B2B2C·B2G·B2G2C 분석, Payer/User/Beneficiary 구분, 경쟁사 직접검색, 공급자/소비자 확보전략까지 포함되어 있습니다. ChatGPT, Gemini 또는 Claude의 웹 검색/Deep Research 기능에 붙여 넣으면 됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={copyPrompt}
+                className="inline-flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-full text-xs font-black shadow-[2px_2px_0px_0px_rgba(245,158,11,1)] cursor-pointer"
+              >
+                {copied ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Clipboard className="w-4 h-4 text-blue-400" />
+                )}
+                {copied ? '프롬프트 복사 완료' : '확장형 A to Z 시장조사 프롬프트 복사'}
+              </button>
+
+              <details className="bg-white border border-amber-200 rounded-2xl p-4">
+                <summary className="cursor-pointer text-xs font-black text-slate-800">
+                  프롬프트 전체 보기
+                </summary>
+                <pre className="mt-4 whitespace-pre-wrap text-[11px] leading-5 text-slate-600 font-mono max-h-[600px] overflow-y-auto">
+                  {prompt}
+                </pre>
+              </details>
+            </section>
+          )}
         </>
       )}
     </div>
