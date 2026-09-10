@@ -31,6 +31,9 @@ jobs:
 
       - name: Build frontend
         run: npx vite build
+        env:
+          VITE_MARKET_RESEARCH_API_URL: https://atoz-backend-363284724091.asia-northeast3.run.app/api/market-research
+          VITE_GOOGLE_SHEETS_API_URL: ${{ secrets.VITE_GOOGLE_SHEETS_API_URL || vars.VITE_GOOGLE_SHEETS_API_URL || 'https://script.google.com/macros/s/AKfycbymdhsa5hvNIOymglFn1mzBUytV08jsFlXfsQO-dgTsAknTT4_iMTUZ-jhkLmj0FsdohA/exec' }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

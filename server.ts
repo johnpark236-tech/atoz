@@ -4,11 +4,13 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import { analyzeLocation } from "./src/services/location/locationAnalysisService";
+import { executeMarketResearch } from "./src/services/marketResearch/marketResearchService";
 
 dotenv.config({ path: ['.env.local', '.env'] });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFile = typeof import.meta?.url === "string" ? fileURLToPath(import.meta.url) : process.cwd();
+const currentDir = path.dirname(currentFile);
 
 async function startServer() {
   const app = express();
@@ -255,8 +257,6 @@ ${question}
       const vworldApiKey = process.env.VWORLD_API_KEY;
       const dataGoKrServiceKey = process.env.DATA_GO_KR_SERVICE_KEY || process.env.PUBLIC_DATA_PORTAL_KEY;
 
-      const { analyzeLocation } = await import("./src/services/location/locationAnalysisService");
-
       const result = await analyzeLocation(
         address.trim(),
         businessType || "카페",
@@ -291,10 +291,6 @@ ${question}
       const client = getGeminiClient();
 
       if (client) {
-        const { executeMarketResearch } = await import(
-          "./src/services/marketResearch/marketResearchService"
-        );
-
         const result = await executeMarketResearch({
           client,
           prompt: prompt.trim(),
