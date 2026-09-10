@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Project } from '../types';
 import {
   BarChart3,
@@ -266,11 +266,15 @@ Z. Zero-Bias Verdict — 최종 점수표와 GO / CONDITIONAL GO / PIVOT / NO-GO
 
 export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
   project,
+  onProjectUpdated,
   initialSubTab = 'idea',
   activeTabKey,
   onSubTabChange,
 }) => {
   const [subTab, setSubTab] = useState<'idea' | 'location'>(initialSubTab);
+  const researchFormRef = useRef<HTMLElement | null>(null);
+  const locationSectionRef = useRef<HTMLDivElement | null>(null);
+
   const [form, setForm] = useState<ResearchForm>({
     ideaName: project.title,
     ideaSummary: project.description,
@@ -428,7 +432,12 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
       <div className="grid md:grid-cols-2 gap-4">
         {/* Card 1: 아이디어 시장조사 */}
         <div
-          onClick={() => handleSwitchSubTab('idea')}
+          onClick={() => {
+            handleSwitchSubTab('idea');
+            setTimeout(() => {
+              researchFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
           className={`cursor-pointer rounded-[28px] p-6 border-2 transition-all flex flex-col justify-between ${
             subTab === 'idea'
               ? 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] ring-2 ring-blue-500'
@@ -460,7 +469,7 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
             </div>
 
             <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
-              Google Search 실시간 웹검색으로 시장규모·경쟁사·고객·수익모델·규제를 분석합니다.
+              아이디어와 사업정보를 입력한 뒤 실시간 Google Search 기반 시장조사를 실행합니다.
             </p>
 
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -478,6 +487,9 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 handleSwitchSubTab('idea');
+                setTimeout(() => {
+                  researchFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
               }}
               className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
                 subTab === 'idea'
@@ -485,7 +497,7 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
                   : 'bg-slate-100 text-slate-800 hover:bg-slate-900 hover:text-white'
               }`}
             >
-              <span>아이디어 시장조사 시작</span>
+              <span>시장조사 입력하기</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -493,7 +505,12 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
 
         {/* Card 2: 점포·상권 분석 */}
         <div
-          onClick={() => handleSwitchSubTab('location')}
+          onClick={() => {
+            handleSwitchSubTab('location');
+            setTimeout(() => {
+              locationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+          }}
           className={`cursor-pointer rounded-[28px] p-6 border-2 transition-all flex flex-col justify-between ${
             subTab === 'location'
               ? 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] ring-2 ring-emerald-500'
@@ -543,6 +560,9 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 handleSwitchSubTab('location');
+                setTimeout(() => {
+                  locationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
               }}
               className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
                 subTab === 'location'
@@ -550,7 +570,7 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
                   : 'bg-emerald-50 text-emerald-900 hover:bg-slate-900 hover:text-white'
               }`}
             >
-              <span>점포·상권분석 시작</span>
+              <span>주소 입력하기</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -559,10 +579,12 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
 
       {/* SubTab Content */}
       {subTab === 'location' ? (
-        <LocationAnalysisView />
+        <div ref={locationSectionRef}>
+          <LocationAnalysisView project={project} onProjectUpdated={onProjectUpdated} />
+        </div>
       ) : (
         <>
-          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8 space-y-6">
+          <section ref={researchFormRef} className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-black mb-2">
@@ -670,7 +692,7 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
                 ) : (
                   <Search className="w-4 h-4 text-blue-400" />
                 )}
-                {isLoading ? '실시간 시장조사 보고서 생성 중...' : 'A to Z 시장조사 시작'}
+                {isLoading ? '실시간 시장조사 보고서 생성 중...' : '실시간 시장조사 실행'}
               </button>
 
               {isLoading && (
