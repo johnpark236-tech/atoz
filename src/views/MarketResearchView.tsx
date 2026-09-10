@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Project } from '../types';
 import {
   BarChart3,
@@ -9,16 +9,8 @@ import {
   AlertTriangle,
   Network,
   Globe2,
-import {
-  BarChart3,
-  Clipboard,
-  CheckCircle2,
-  Search,
-  Sparkles,
-  AlertTriangle,
-  Network,
-  Globe2,
   MapPin,
+  ArrowRight,
 } from 'lucide-react';
 import { LocationAnalysisView } from './LocationAnalysisView';
 
@@ -26,6 +18,8 @@ interface MarketResearchViewProps {
   project: Project;
   onProjectUpdated?: (updated: Project) => void;
   initialSubTab?: 'idea' | 'location';
+  activeTabKey?: string;
+  onSubTabChange?: (subTab: 'idea' | 'location') => void;
 }
 
 interface ResearchForm {
@@ -374,38 +368,157 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
     </label>
   );
 
+  useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab, activeTabKey]);
+
+  const handleSwitchSubTab = (newTab: 'idea' | 'location') => {
+    setSubTab(newTab);
+    if (onSubTabChange) onSubTabChange(newTab);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Sub-tab Navigation Bar */}
-      <div className="flex items-center justify-start gap-3 bg-white p-2 rounded-3xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]">
-        <button
-          type="button"
-          onClick={() => setSubTab('idea')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+      {/* 2 Large Mode Selection Cards */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Card 1: 아이디어 시장조사 */}
+        <div
+          onClick={() => handleSwitchSubTab('idea')}
+          className={`cursor-pointer rounded-[28px] p-6 border-2 transition-all flex flex-col justify-between ${
             subTab === 'idea'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] ring-2 ring-blue-500'
+              : 'bg-white/80 border-slate-200 hover:border-slate-400 hover:bg-white'
           }`}
         >
-          <BarChart3 className={`w-4 h-4 ${subTab === 'idea' ? 'text-blue-400' : 'text-slate-400'}`} />
-          <span>아이디어 시장조사</span>
-        </button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                    subTab === 'idea' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 block">
+                    Business Model Analysis
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900">아이디어 시장조사</h3>
+                </div>
+              </div>
+              {subTab === 'idea' && (
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                  선택됨
+                </span>
+              )}
+            </div>
 
-        <button
-          type="button"
-          onClick={() => setSubTab('location')}
-          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+            <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
+              시장규모·경쟁사·고객·수익모델·규제를 분석합니다.
+            </p>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {['B2C·B2B·B2B2C', '경쟁사 탐색', '수익모델 검증', '규제·리스크'].map((tag) => (
+                <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-5 mt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSwitchSubTab('idea');
+              }}
+              className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+                subTab === 'idea'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-800 hover:bg-slate-900 hover:text-white'
+              }`}
+            >
+              <span>아이디어 시장조사 시작</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Card 2: 점포·상권 분석 */}
+        <div
+          onClick={() => handleSwitchSubTab('location')}
+          className={`cursor-pointer rounded-[28px] p-6 border-2 transition-all flex flex-col justify-between ${
             subTab === 'location'
-              ? 'bg-slate-900 text-white shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              ? 'bg-white border-slate-900 shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] ring-2 ring-emerald-500'
+              : 'bg-white/80 border-slate-200 hover:border-slate-400 hover:bg-white'
           }`}
         >
-          <MapPin className={`w-4 h-4 ${subTab === 'location' ? 'text-emerald-400' : 'text-slate-400'}`} />
-          <span>점포 입지 / 주소지 분석</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600">
-            신규
-          </span>
-        </button>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                    subTab === 'location' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">
+                    GIS & Building BigData
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900">점포·상권 분석</h3>
+                </div>
+              </div>
+              {subTab === 'location' ? (
+                <span className="text-xs font-black px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  선택됨
+                </span>
+              ) : (
+                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500 text-white shadow-xs animate-pulse">
+                  신규 기능
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs sm:text-sm font-bold text-slate-600 leading-relaxed">
+              주소만 입력하면 건물용도·주변점포·경쟁상권·입지조건을 분석합니다.
+            </p>
+
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {['주소 검색', '건축물 용도', '반경 500m 상권', '경쟁 점포', '실데이터 분석'].map((badge) => (
+                <span
+                  key={badge}
+                  className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200"
+                >
+                  {badge}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-5 mt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSwitchSubTab('location');
+              }}
+              className={`w-full min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+                subTab === 'location'
+                  ? 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700'
+                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white'
+              }`}
+            >
+              <span>주소로 상권 분석하기</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {subTab === 'location' ? (

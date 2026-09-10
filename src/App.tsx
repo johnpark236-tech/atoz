@@ -201,12 +201,21 @@ export default function App() {
           <WizardView onComplete={handleCompleteWizard} onCancel={() => setActiveTab('dashboard')} />
         )}
 
-        {activeTab === 'market' && (
+        {(activeTab === 'market' || activeTab === 'location') && (
           <MarketResearchView
             project={activeProject}
+            initialSubTab={activeTab === 'location' ? 'location' : 'idea'}
+            activeTabKey={activeTab}
+            onSubTabChange={(sub) => {
+              if (sub === 'location' && activeTab !== 'location') {
+                setActiveTab('location');
+              } else if (sub === 'idea' && activeTab !== 'market') {
+                setActiveTab('market');
+              }
+            }}
             onProjectUpdated={(updated) => {
               setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-              showToast('점포 입지 분석 결과가 프로젝트에 저장되었습니다.');
+              showToast('점포·상권 분석 결과가 프로젝트에 저장되었습니다.');
             }}
           />
         )}

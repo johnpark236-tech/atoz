@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
+  MapPin,
 } from 'lucide-react';
 import {
   getCloudStatus,
@@ -61,6 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'roadmap', label: 'A to Z 로드맵' },
     { id: 'wizard', label: '사업화 위저드' },
     { id: 'market', label: 'A to Z 시장조사' },
+    { id: 'location', label: '점포·상권 분석' },
     { id: 'finance', label: '매출·정산 관리' },
     { id: 'organizations', label: '행정·기관 포털' },
     { id: 'tax', label: '세무 캘린더' },
@@ -165,8 +167,12 @@ export const Header: React.FC<HeaderProps> = ({
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
-                  <button key={tab.id} id={`nav-${tab.id}`} onClick={() => onSelectTab(tab.id)} className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-50 text-blue-700 font-black shadow-xs ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
-                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`} />
+                  <button key={tab.id} id={`nav-${tab.id}`} onClick={() => onSelectTab(tab.id)} className={`flex items-center space-x-2 px-3.5 py-2 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-50 text-blue-700 font-black shadow-xs ring-1 ring-blue-200' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}>
+                    {tab.id === 'location' ? (
+                      <MapPin className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-emerald-500'}`} />
+                    ) : (
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-blue-600' : 'bg-slate-200'}`} />
+                    )}
                     <span>{tab.label}</span>
                   </button>
                 );

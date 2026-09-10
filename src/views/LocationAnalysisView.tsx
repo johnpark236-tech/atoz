@@ -24,7 +24,10 @@ import {
   FileText,
   Clock,
   Trash2,
-  RotateCcw,
+  Info,
+  Check,
+  Building,
+  Navigation,
 } from 'lucide-react';
 
 interface LocationAnalysisViewProps {
@@ -221,54 +224,75 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Input Section Card */}
+      {/* Top Input Section Card */}
       <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
             <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-              <Compass className="w-3.5 h-3.5" /> GIS & Building Code Intelligence
+              <Compass className="w-3.5 h-3.5" /> GIS & Building BigData
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-3 tracking-tight">
-              주소지 / 점포 입지 분석
+              점포·상권 분석
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-bold mt-1 max-w-3xl">
-              임대하려는 점포의 주소와 희망 업종을 입력하면 건축물대장 주용도, 인허가 적합성, 토지 용도지역, 반경별 경쟁점포 및 상권 스코어를 종합 분석합니다.
+            <p className="text-xs sm:text-sm text-slate-600 font-bold mt-1.5 max-w-3xl leading-relaxed">
+              창업 예정지의 주소를 입력하면 VWorld·건축물대장·상가(상권) 공공데이터를 이용해 건물용도와 주변 상권을 실데이터로 분석합니다.
             </p>
           </div>
-          <div className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-2xl p-3 max-w-sm shrink-0">
-            <strong className="text-slate-900 flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" /> 공공데이터 연동
-            </strong>
-            <span className="block mt-1">
-              국토교통부 건축HUB(건축물대장), 소진공 상가(상권)정보, VWorld 전자지도를 교차 분석합니다.
+          <div className="flex flex-wrap md:flex-col gap-1.5 text-[10px] font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-2xl p-3 shrink-0">
+            <span className="text-slate-900 font-black flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-blue-600" /> 공공데이터 실시간 연동
+            </span>
+            <span className="inline-flex items-center gap-1 text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> VWorld 전자지도 (PNU/좌표)
+            </span>
+            <span className="inline-flex items-center gap-1 text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> 국토교통부 건축HUB (건축물대장)
+            </span>
+            <span className="inline-flex items-center gap-1 text-slate-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> 소상공인시장진흥공단 (상권정보)
             </span>
           </div>
         </div>
 
-        {/* Input Form */}
+        {/* Big Address Input Bar */}
         <div className="mt-6 space-y-5">
-          {/* Address Input */}
           <div>
-            <label className="block text-xs font-black text-slate-800 mb-2">
-              점포 주소 (도로명 또는 지번 주소) *
+            <label className="block text-xs font-black text-slate-900 mb-2">
+              점포 주소 입력 (도로명 또는 지번 주소) *
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={addressInput}
-                onChange={(e) => setAddressInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRunAnalysis();
-                }}
-                placeholder="예: 충남 천안시 동남구 신부동 451-1 또는 서울 강남구 역삼동 737"
-                className="w-full pl-10 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden"
-              />
-              <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-4" />
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={addressInput}
+                  onChange={(e) => setAddressInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleRunAnalysis();
+                  }}
+                  placeholder="예: 충청남도 천안시 동남구 신부동 462-1 또는 서울 강남구 역삼동 737"
+                  className="w-full pl-11 pr-4 py-4 min-h-[52px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-sm sm:text-base font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden transition-colors"
+                />
+                <MapPin className="w-5 h-5 text-emerald-600 absolute left-3.5 top-4" />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleRunAnalysis()}
+                disabled={isLoading || !addressInput.trim()}
+                className="min-h-[52px] px-8 py-4 bg-slate-900 text-white rounded-2xl text-sm sm:text-base font-black shadow-[3px_3px_0px_0px_rgba(16,185,129,1)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 whitespace-nowrap inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                {isLoading ? (
+                  <Sparkles className="w-5 h-5 animate-pulse text-emerald-400" />
+                ) : (
+                  <Search className="w-5 h-5 text-emerald-400" />
+                )}
+                <span>{isLoading ? '실데이터 분석 중...' : '주소 분석하기'}</span>
+              </button>
             </div>
 
             {/* Quick Address Chips */}
-            <div className="flex flex-wrap items-center gap-2 mt-2.5">
-              <span className="text-[11px] font-bold text-slate-400">추천 예시:</span>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span className="text-[11px] font-black text-slate-400">추천 빠른조회:</span>
               {SAMPLE_ADDRESSES.map((sample) => (
                 <button
                   key={sample.address}
@@ -277,7 +301,7 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
                     setAddressInput(sample.address);
                     handleRunAnalysis(sample.address, radius);
                   }}
-                  className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 transition-colors"
+                  className="min-h-[32px] text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 transition-colors"
                 >
                   {sample.label}
                 </button>
@@ -285,13 +309,48 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
             </div>
           </div>
 
-          {/* Business Type & Radius Selectors */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Business Type */}
-            <div>
-              <label className="block text-xs font-black text-slate-800 mb-2">
-                선택 업종 (또는 직접 입력)
-              </label>
+          {/* Analysis Radius & Business Type Options */}
+          <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+            {/* Radius Selector */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-slate-900 block">분석 반경</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 300, label: '300m', desc: '도보 4분' },
+                  { value: 500, label: '500m', desc: '기본권장' },
+                  { value: 1000, label: '1km', desc: '광역상권' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setRadius(opt.value);
+                      if (analysisResult) handleRunAnalysis(addressInput, opt.value);
+                    }}
+                    className={`min-h-[46px] p-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border cursor-pointer ${
+                      radius === opt.value
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-white'
+                    }`}
+                  >
+                    <span
+                      className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${
+                        radius === opt.value ? 'border-white bg-white' : 'border-slate-400 bg-white'
+                      }`}
+                    >
+                      {radius === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />}
+                    </span>
+                    <span>
+                      {opt.label} <span className="text-[10px] font-normal opacity-70">({opt.desc})</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Business Type Selector */}
+            <div className="space-y-2">
+              <span className="text-xs font-black text-slate-900 block">희망 업종 선택</span>
               <div className="space-y-2">
                 <select
                   value={businessType}
@@ -299,7 +358,7 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
                     setBusinessType(e.target.value);
                     if (e.target.value !== '직접 입력') setCustomBusinessType('');
                   }}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden"
+                  className="w-full min-h-[46px] p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden"
                 >
                   {BUSINESS_TYPE_PRESETS.map((preset) => (
                     <option key={preset} value={preset}>
@@ -315,74 +374,11 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
                     value={customBusinessType}
                     onChange={(e) => setCustomBusinessType(e.target.value)}
                     placeholder="희망 업종 직접 입력 (예: 애견 미용샵, 무인 스튜디오)"
-                    className="w-full p-3 bg-slate-50 border border-blue-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden"
+                    className="w-full min-h-[44px] p-3 bg-slate-50 border border-blue-300 rounded-2xl text-xs font-bold text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-hidden"
                   />
                 )}
               </div>
             </div>
-
-            {/* Radius Toggle */}
-            <div>
-              <label className="block text-xs font-black text-slate-800 mb-2">
-                분석 반경
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 300, label: '300m (도보 4분)' },
-                  { value: 500, label: '500m (기본권장)' },
-                  { value: 1000, label: '1km (광역상권)' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      setRadius(opt.value);
-                      if (analysisResult) handleRunAnalysis(addressInput, opt.value);
-                    }}
-                    className={`p-3 rounded-2xl text-xs font-black transition-all border ${
-                      radius === opt.value
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Action */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => handleRunAnalysis()}
-              disabled={isLoading || !addressInput.trim()}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 text-white rounded-full text-sm font-black shadow-[3px_3px_0px_0px_rgba(16,185,129,1)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100"
-            >
-              {isLoading ? (
-                <Sparkles className="w-4 h-4 animate-pulse text-emerald-400" />
-              ) : (
-                <Search className="w-4 h-4 text-emerald-400" />
-              )}
-              {isLoading ? '건축물대장 및 상권 데이터 분석 중...' : '점포 입지 분석 시작'}
-            </button>
-
-            {analysisResult && (
-              <button
-                type="button"
-                onClick={handleSaveToProject}
-                disabled={isSaved}
-                className={`inline-flex items-center gap-2 px-5 py-3 rounded-full text-xs font-black border transition-all ${
-                  isSaved
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                    : 'bg-white text-slate-800 border-slate-300 hover:border-slate-900'
-                }`}
-              >
-                <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'text-emerald-600 fill-emerald-600' : 'text-slate-400'}`} />
-                {isSaved ? '프로젝트에 저장 완료' : '이 분석 결과 프로젝트에 저장'}
-              </button>
-            )}
           </div>
 
           {errorMessage && (
@@ -394,58 +390,392 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
         </div>
       </section>
 
-      {/* Analysis Results Display */}
+      {/* Analysis Results Display: Exact Decision-Making Order */}
       {analysisResult && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* 1. Overview Score & Verdict Card */}
-          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-slate-200">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  {getVerdictBadge(analysisResult.aiAnalysis.verdict)}
-                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                    데이터 커버리지: {analysisResult.score.dataCoverage}%
-                  </span>
-                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-                    업종: {analysisResult.businessType}
-                  </span>
+          {/* Top Floating Action: Save Result */}
+          <div className="flex items-center justify-between bg-white p-4 rounded-3xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]">
+            <div className="flex items-center gap-2 text-xs font-black text-slate-800">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>
+                <strong>{analysisResult.address.roadAddress || analysisResult.inputAddress}</strong> 분석 완료
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveToProject}
+              disabled={isSaved}
+              className={`min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black border transition-all cursor-pointer ${
+                isSaved
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : 'bg-slate-900 text-white border-slate-900 shadow-sm hover:bg-slate-800'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'text-emerald-600 fill-emerald-600' : 'text-blue-400'}`} />
+              <span>{isSaved ? '프로젝트에 저장 완료' : '이 분석 결과 프로젝트에 저장'}</span>
+            </button>
+          </div>
+
+          {/* 1. 주소 확인 (Address Confirmation) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+                  1
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                  {analysisResult.aiAnalysis.oneLineVerdict}
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-blue-600" /> 주소 확인
                 </h3>
               </div>
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                VWorld 실데이터
+              </span>
+            </div>
 
-              {/* Big Score Dial */}
-              <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:px-6 shrink-0">
-                <div className="text-center">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-                    입지 종합 스코어
-                  </span>
-                  <div className="flex items-baseline justify-center gap-1 mt-0.5">
-                    <span className="text-4xl font-black text-slate-900">
-                      {analysisResult.score.overallScore}
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">/ 100</span>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">도로명주소</span>
+                <strong className="text-slate-900 text-sm block mt-1">
+                  {analysisResult.address.roadAddress || '-'}
+                </strong>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">지번주소</span>
+                <strong className="text-slate-900 text-sm block mt-1">
+                  {analysisResult.address.jibunAddress || '-'}
+                </strong>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">좌표 (WGS84)</span>
+                <strong className="text-slate-900 text-sm block mt-1 font-mono">
+                  {analysisResult.address.lat.toFixed(6)}, {analysisResult.address.lng.toFixed(6)}
+                </strong>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">PNU (고유번호)</span>
+                <strong className="text-slate-900 text-sm block mt-1 font-mono tracking-tight">
+                  {analysisResult.address.pnu}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          {/* 2 & 3. 건물 기본정보 & 건물 주용도 (Building Basic Info & Main Purpose) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+                  2
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Building className="w-4 h-4 text-blue-600" /> 건물 기본정보 및 주용도
+                </h3>
+              </div>
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                국토교통부 건축물대장
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="bg-blue-50/60 border border-blue-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-blue-600 block uppercase">건물명</span>
+                <strong className="text-slate-900 text-base block mt-1">
+                  {analysisResult.building.buildingName}
+                </strong>
+              </div>
+              <div className="bg-blue-50/60 border border-blue-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-blue-600 block uppercase">3. 건축물 주용도</span>
+                <strong className="text-blue-700 text-base block mt-1">
+                  {analysisResult.building.mainPurpose}
+                </strong>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">기타용도</span>
+                <span className="text-slate-800 font-bold block mt-1 truncate">
+                  {analysisResult.building.etcPurpose || '-'}
+                </span>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">건축구조</span>
+                <span className="text-slate-800 font-bold block mt-1">
+                  {analysisResult.building.structure || '-'}
+                </span>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">층수 규모</span>
+                <span className="text-slate-800 font-bold block mt-1">
+                  지상 {analysisResult.building.grndFlrCnt ?? '-'}층 / 지하 {analysisResult.building.ugrndFlrCnt ?? '-'}층
+                </span>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">연면적</span>
+                <span className="text-slate-800 font-bold block mt-1">
+                  {analysisResult.building.totArea ? `${analysisResult.building.totArea.toLocaleString()} ㎡` : '-'}
+                </span>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">주차 / 승강기</span>
+                <span className="text-slate-800 font-bold block mt-1">
+                  {analysisResult.building.parkingCnt !== null ? `${analysisResult.building.parkingCnt}대` : '-'} /{' '}
+                  {analysisResult.building.rideUseElvtCnt !== null ? `${analysisResult.building.rideUseElvtCnt}대` : '-'}
+                </span>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">사용승인일</span>
+                <span className="text-slate-800 font-bold block mt-1 font-mono">
+                  {analysisResult.building.useAprDay || '-'}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. 해당 업종 사용 적합성 (Operational Suitability) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center">
+                  4
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> 해당 업종 운영 적합성 분석
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-500">
+                  선택 업종: <strong className="text-slate-900">{analysisResult.businessType}</strong>
+                </span>
+                {getSuitabilityBadge(analysisResult.building.classification.suitabilityLevel)}
+              </div>
+            </div>
+
+            <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2">
+              <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                <Info className="w-4 h-4 text-emerald-700" /> 건축물 용도 적합성 판정 의견
+              </span>
+              <p className="text-xs sm:text-sm font-bold text-emerald-900 leading-relaxed">
+                {analysisResult.building.classification.suitabilitySummary}
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <span className="text-xs font-black text-slate-800 block">임대 전 필수 행정·인허가 사전 확인사항</span>
+              <ul className="grid sm:grid-cols-2 gap-2 text-xs font-medium text-slate-700">
+                {analysisResult.building.classification.recommendedChecks.map((check, idx) => (
+                  <li key={idx} className="flex items-start gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{check}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          {/* 5. 반경 내 전체 점포 (Total Stores in Radius) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-800 font-black text-xs flex items-center justify-center">
+                  5
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Store className="w-4 h-4 text-indigo-600" /> 반경 {analysisResult.radius}m 전체 점포 분포
+                </h3>
+              </div>
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                소상공인시장진흥공단 상가(상권)정보
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center sm:text-left">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">반경 내 전체 실점포수</span>
+                <strong className="text-2xl sm:text-3xl font-black text-slate-900 block mt-1">
+                  {analysisResult.commercialArea.totalStoreCount.toLocaleString()}개
+                </strong>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center sm:text-left">
+                <span className="text-[10px] font-black text-slate-400 block uppercase">상권 점포 밀집도</span>
+                <strong className="text-2xl sm:text-3xl font-black text-blue-600 block mt-1">
+                  {analysisResult.commercialArea.densityLevel}
+                </strong>
+                <span className="text-[11px] font-bold text-slate-500 block mt-1">
+                  {analysisResult.commercialArea.densityDescription}
+                </span>
+              </div>
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center sm:text-left">
+                <span className="text-[10px] font-black text-rose-500 block uppercase">동일/유사업종 점포수</span>
+                <strong className="text-2xl sm:text-3xl font-black text-rose-600 block mt-1">
+                  {analysisResult.commercialArea.sameCategoryCount}개
+                </strong>
+                <span className="text-[11px] font-bold text-rose-700 block mt-1">
+                  유사 업종 {analysisResult.commercialArea.similarCategoryCount}개 포함
+                </span>
+              </div>
+            </div>
+
+            {/* Category Breakdown Bars */}
+            <div className="space-y-3 pt-2">
+              <span className="text-xs font-black text-slate-800 block">업종 대분류별 점포 비중</span>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {analysisResult.commercialArea.categoryCounts.map((cat) => (
+                  <div key={cat.category} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-slate-800">{cat.category}</span>
+                      <span className="text-slate-600 font-mono">
+                        {cat.count}개 ({cat.percentage}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${cat.percentage}%` }} />
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 6. 동일/유사업종 경쟁점포 (Competitor Stores) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center">
+                  6
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <Store className="w-4 h-4 text-rose-600" /> 동일 / 유사업종 경쟁점포 목록
+                </h3>
+              </div>
+              <span className="text-xs font-bold text-slate-500">거리순 정렬</span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-medium text-slate-700">
+                <thead className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-3">구분</th>
+                    <th className="py-3 px-3">상호명</th>
+                    <th className="py-3 px-3">업종 분류</th>
+                    <th className="py-3 px-3">직선거리</th>
+                    <th className="py-3 px-3">소재지</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {analysisResult.commercialArea.competitors.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-slate-400 font-bold">
+                        반경 내 조회된 경쟁 점포가 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    analysisResult.commercialArea.competitors.slice(0, 15).map((store) => (
+                      <tr key={store.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3">
+                          {store.isSameCategory ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                              동일업종
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                              유사업종
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 font-bold text-slate-900">
+                          {store.name} {store.branch && <span className="text-slate-400 text-[10px]">({store.branch})</span>}
+                        </td>
+                        <td className="py-3 px-3 text-slate-600">
+                          {store.subCategory || store.midCategory}
+                        </td>
+                        <td className="py-3 px-3 font-bold text-blue-600 font-mono">{store.distance}m</td>
+                        <td className="py-3 px-3 text-slate-500 truncate max-w-52">
+                          {store.roadAddress || store.address}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* 7. 지도 (Interactive Map) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+                  7
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-600" /> 상권 지도 및 반경 레이더
+                </h3>
+              </div>
+              <span className="text-xs font-bold text-slate-500">
+                반경 {analysisResult.radius}m ({analysisResult.commercialArea.competitors.length}개 점포 표시)
+              </span>
+            </div>
+
+            <LocationMap
+              centerLat={analysisResult.address.lat}
+              centerLng={analysisResult.address.lng}
+              addressTitle={analysisResult.address.roadAddress || analysisResult.inputAddress}
+              radius={analysisResult.radius}
+              competitors={analysisResult.commercialArea.competitors}
+            />
+          </section>
+
+          {/* 8. 상권 요약 (Commercial Area Summary & Scores) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+                  8
+                </div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-600" /> 상권 종합 요약 및 스코어
+                </h3>
+              </div>
+              <div className="flex items-center gap-3">
+                {getVerdictBadge(analysisResult.aiAnalysis.verdict)}
+                <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                  데이터 커버리지: {analysisResult.score.dataCoverage}%
+                </span>
+              </div>
+            </div>
+
+            {/* Big Score Dial */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-50 border border-slate-200 rounded-3xl p-6">
+              <div>
+                <span className="text-xs font-black text-slate-500 block uppercase">
+                  종합 입지 적합도 평가
+                </span>
+                <h4 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                  {analysisResult.aiAnalysis.oneLineVerdict}
+                </h4>
+              </div>
+
+              <div className="text-center sm:text-right shrink-0">
+                <span className="text-[10px] font-black uppercase text-slate-400 block">종합 스코어</span>
+                <div className="flex items-baseline justify-center sm:justify-end gap-1 mt-0.5">
+                  <span className="text-4xl sm:text-5xl font-black text-slate-900">
+                    {analysisResult.score.overallScore}
+                  </span>
+                  <span className="text-sm font-bold text-slate-400">/ 100</span>
                 </div>
               </div>
             </div>
 
-            {/* Subscores Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+            {/* 5-Dimension Score Bars */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
               {Object.entries(analysisResult.score.breakdown).map(([key, dim]) => (
                 <div key={key} className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-700">{dim.label}</span>
-                    <span className="text-xs font-black text-blue-600">
+                    <span className="text-xs font-black text-slate-800">{dim.label}</span>
+                    <span className="text-xs font-black text-blue-600 font-mono">
                       {dim.score}/{dim.max}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-slate-900 rounded-full"
-                      style={{ width: `${(dim.score / dim.max) * 100}%` }}
-                    />
+                    <div className="h-full bg-slate-900 rounded-full" style={{ width: `${(dim.score / dim.max) * 100}%` }} />
                   </div>
                   <p className="text-[10px] font-bold text-slate-500 leading-tight">
                     {dim.description}
@@ -455,332 +785,122 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
             </div>
           </section>
 
-          {/* 2. Map & Geographic Identification Card */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-blue-600" /> 상권 지도 및 반경 레이더
-                  </h4>
-                  <span className="text-xs font-bold text-slate-500">
-                    반경 {analysisResult.radius}m
-                  </span>
+          {/* 9. AI 입지 의견 (AI Location Evaluation) */}
+          <section className="bg-slate-900 text-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">
+                  9
                 </div>
-
-                <LocationMap
-                  centerLat={analysisResult.address.lat}
-                  centerLng={analysisResult.address.lng}
-                  addressTitle={analysisResult.address.roadAddress || analysisResult.inputAddress}
-                  radius={analysisResult.radius}
-                  competitors={analysisResult.commercialArea.competitors}
-                />
-
-                {/* Address Metadata Bar */}
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-medium text-slate-700">
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase">도로명주소</span>
-                    <span className="font-bold text-slate-900">{analysisResult.address.roadAddress}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase">지번주소</span>
-                    <span className="font-bold text-slate-900">{analysisResult.address.jibunAddress}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase">좌표 (WGS84)</span>
-                    <span className="font-bold text-slate-900">
-                      {analysisResult.address.lat.toFixed(5)}, {analysisResult.address.lng.toFixed(5)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase">PNU (고유번호)</span>
-                    <span className="font-mono text-[11px] font-bold text-slate-900">{analysisResult.address.pnu}</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* 3. Commercial Area Breakdown & Competitor List */}
-              <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                      <Store className="w-5 h-5 text-emerald-600" /> 반경 {analysisResult.radius}m 상권 점포 분포
-                    </h4>
-                    <p className="text-xs text-slate-500 font-bold mt-1">
-                      소상공인시장진흥공단 상가(상권)정보 기반
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="text-[10px] font-black text-slate-400 uppercase block">전체 점포수</span>
-                      <strong className="text-lg font-black text-slate-900">
-                        {analysisResult.commercialArea.totalStoreCount}개
-                      </strong>
-                    </div>
-                    <div className="text-right pl-3 border-l border-slate-200">
-                      <span className="text-[10px] font-black text-rose-500 uppercase block">동일 업종</span>
-                      <strong className="text-lg font-black text-rose-600">
-                        {analysisResult.commercialArea.sameCategoryCount}개
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Industry Breakdown Bars */}
-                <div className="space-y-2.5">
-                  <span className="text-xs font-black text-slate-800">업종 대분류별 비중</span>
-                  <div className="space-y-2">
-                    {analysisResult.commercialArea.categoryCounts.map((cat) => (
-                      <div key={cat.category} className="space-y-1">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="text-slate-700">{cat.category}</span>
-                          <span className="text-slate-500">
-                            {cat.count}개 ({cat.percentage}%)
-                          </span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-600 rounded-full"
-                            style={{ width: `${cat.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Competitor Stores Table */}
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-900">주변 주요 경쟁 및 유관 점포</span>
-                    <span className="text-[11px] font-bold text-slate-400">거리순 정렬</span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-medium text-slate-700">
-                      <thead className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase border-b border-slate-200">
-                        <tr>
-                          <th className="py-2.5 px-3">구분</th>
-                          <th className="py-2.5 px-3">상호명</th>
-                          <th className="py-2.5 px-3">업종 분류</th>
-                          <th className="py-2.5 px-3">직선거리</th>
-                          <th className="py-2.5 px-3">소재지</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {analysisResult.commercialArea.competitors.slice(0, 10).map((store) => (
-                          <tr key={store.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-2.5 px-3">
-                              {store.isSameCategory ? (
-                                <span className="inline-block w-2 h-2 rounded-full bg-rose-500" title="동일업종" />
-                              ) : (
-                                <span className="inline-block w-2 h-2 rounded-full bg-blue-400" title="유사/기타" />
-                              )}
-                            </td>
-                            <td className="py-2.5 px-3 font-bold text-slate-900">
-                              {store.name} {store.branch && <span className="text-slate-400 text-[10px]">({store.branch})</span>}
-                            </td>
-                            <td className="py-2.5 px-3 text-slate-600">
-                              {store.subCategory || store.midCategory}
-                            </td>
-                            <td className="py-2.5 px-3 font-bold text-blue-600">{store.distance}m</td>
-                            <td className="py-2.5 px-3 text-slate-500 truncate max-w-44">
-                              {store.roadAddress || store.address}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </section>
+                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" /> AI 입지 종합 의견
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">
+                {analysisResult.aiAnalysis.source}
+              </span>
             </div>
 
-            {/* Right Column: Building & Land Details + AI Evaluation */}
-            <div className="space-y-6">
-              {/* Building Register Card */}
-              <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h4 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-blue-600" /> 건축물대장 정보
-                  </h4>
-                  {getSuitabilityBadge(analysisResult.building.classification.suitabilityLevel)}
-                </div>
+            <div className="grid md:grid-cols-2 gap-5">
+              {/* Pros */}
+              <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
+                <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> 주요 강점 (Pros)
+                </span>
+                <ul className="space-y-1.5 text-xs text-slate-300 font-medium pl-1">
+                  {analysisResult.aiAnalysis.pros.map((p, i) => (
+                    <li key={i}>• {p}</li>
+                  ))}
+                </ul>
+              </div>
 
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">건물명</span>
-                    <strong className="text-slate-900">{analysisResult.building.buildingName}</strong>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">건축물 주용도</span>
-                    <strong className="text-blue-700">{analysisResult.building.mainPurpose}</strong>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">기타용도</span>
-                    <span className="text-slate-800 truncate max-w-40">{analysisResult.building.etcPurpose}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">건축구조</span>
-                    <span className="text-slate-800">{analysisResult.building.structure}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">규모</span>
-                    <span className="text-slate-800">
-                      지상 {analysisResult.building.grndFlrCnt || '-'}층 / 지하 {analysisResult.building.ugrndFlrCnt || '-'}층
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">연면적</span>
-                    <span className="text-slate-800">
-                      {analysisResult.building.totArea ? `${analysisResult.building.totArea.toLocaleString()} ㎡` : '-'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">주차 / 승강기</span>
-                    <span className="text-slate-800">
-                      {analysisResult.building.parkingCnt || 0}대 / {analysisResult.building.rideUseElvtCnt || 0}대
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-500 font-bold">사용승인일</span>
-                    <span className="text-slate-800">{analysisResult.building.useAprDay || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-[11px] font-bold text-blue-900">
-                  <span className="block font-black text-blue-950 mb-0.5">📌 용도 적합성 판정 의견</span>
-                  {analysisResult.building.classification.suitabilitySummary}
-                </div>
-              </section>
-
-              {/* Land Use & Zoning Card */}
-              <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 space-y-4">
-                <h4 className="text-sm font-black text-slate-900 flex items-center gap-1.5 border-b border-slate-100 pb-3">
-                  <Layers className="w-4 h-4 text-emerald-600" /> 토지 / 용도지역·지구
-                </h4>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">용도지역</span>
-                    <strong className="text-slate-900">{analysisResult.landUse.zoningArea}</strong>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold">용도지구</span>
-                    <span className="text-slate-800">{analysisResult.landUse.zoningDistrict}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-500 font-bold">지구단위계획</span>
-                    <span className="text-slate-800">{String(analysisResult.landUse.districtPlan)}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1 pt-2">
-                  <span className="text-[10px] font-black uppercase text-slate-400 block">행위제한 참고사항</span>
-                  <ul className="space-y-1 text-[11px] font-medium text-slate-600 list-disc list-inside">
-                    {analysisResult.landUse.restrictions.map((res, i) => (
-                      <li key={i}>{res}</li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
-
-              {/* AI Comprehensive Analysis Card */}
-              <section className="bg-slate-900 text-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] p-6 space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-sm font-black">AI 입지 종합 컨설팅</h4>
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    {analysisResult.aiAnalysis.source}
-                  </span>
-                </div>
-
-                {/* Pros */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-black text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 주요 장점 (Pros)
-                  </span>
-                  <ul className="space-y-1 text-xs text-slate-300 font-medium pl-2">
-                    {analysisResult.aiAnalysis.pros.map((p, i) => (
-                      <li key={i}>• {p}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Risks */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-black text-rose-400 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> 위험 요인 및 주의점 (Risks)
-                  </span>
-                  <ul className="space-y-1 text-xs text-slate-300 font-medium pl-2">
-                    {analysisResult.aiAnalysis.risks.map((r, i) => (
-                      <li key={i}>• {r}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Pre-Lease Checklist */}
-                <div className="space-y-1.5 pt-2 border-t border-slate-800">
-                  <span className="text-xs font-black text-blue-300 flex items-center gap-1">
-                    <FileText className="w-3.5 h-3.5" /> 임대차 계약 전 필수 점검 항목
-                  </span>
-                  <ul className="space-y-1 text-[11px] text-slate-300 font-medium pl-2">
-                    {analysisResult.aiAnalysis.preLeaseChecklist.map((c, i) => (
-                      <li key={i}>✓ {c}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Legal Disclaimer Box */}
-                <div className="p-3 bg-slate-800/80 rounded-2xl text-[10px] text-slate-400 font-medium leading-relaxed border border-slate-700">
-                  ⚠️ {analysisResult.aiAnalysis.legalDisclaimer}
-                </div>
-              </section>
+              {/* Risks */}
+              <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
+                <span className="text-xs font-black text-rose-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-400" /> 위험 요인 및 주의점 (Risks)
+                </span>
+                <ul className="space-y-1.5 text-xs text-slate-300 font-medium pl-1">
+                  {analysisResult.aiAnalysis.risks.map((r, i) => (
+                    <li key={i}>• {r}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
 
-          {/* Phase 2 Data Availability Status Bar */}
-          <section className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
-            <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">
-              Phase 2 빅데이터 연동 준비 현황 (공식 Open API 확장 영역)
-            </h4>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {Object.entries(analysisResult.phase2Metrics).map(([key, metric]) => (
-                <div key={key} className="bg-white p-3.5 rounded-2xl border border-slate-200">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-black text-slate-900">{metric.label}</span>
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                      미연결
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium">{metric.description}</p>
-                </div>
-              ))}
+            {/* Pre-Lease Checklist */}
+            <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
+              <span className="text-xs font-black text-blue-300 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-400" /> 임대차 계약 전 필수 점검 항목
+              </span>
+              <ul className="grid sm:grid-cols-2 gap-2 text-xs text-slate-300 font-medium">
+                {analysisResult.aiAnalysis.preLeaseChecklist.map((c, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </section>
 
-          {/* Official Data Sources List */}
-          <section className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3 text-xs">
-            <h4 className="font-black text-slate-900">공공데이터 출처 및 기준일시</h4>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {analysisResult.sources.map((src, i) => (
-                <div key={i} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                  <span className="text-[10px] font-black text-blue-600 block">{src.provider}</span>
-                  <strong className="text-slate-900 block truncate">{src.dataset}</strong>
-                  <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
-                    <span>{new Date(src.retrievedAt).toLocaleDateString()}</span>
-                    <a
-                      href={src.officialUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline inline-flex items-center gap-0.5"
-                    >
-                      공식포털 <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
+          {/* 10. 주의사항 (Precautions & Legal Disclaimers) */}
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-5">
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-4">
+              <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-black text-xs flex items-center justify-center">
+                10
+              </div>
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600" /> 법적 주의사항 및 데이터 출처
+              </h3>
+            </div>
+
+            {/* Legal Disclaimer Box */}
+            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-300 text-xs font-medium text-amber-900 leading-relaxed space-y-1">
+              <span className="font-black flex items-center gap-1 text-amber-950">
+                <ShieldAlert className="w-4 h-4 text-amber-700" /> 법적 효력 면책 공고
+              </span>
+              <p>{analysisResult.aiAnalysis.legalDisclaimer}</p>
+            </div>
+
+            {/* Land Use Restrictions */}
+            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-2 text-xs">
+              <span className="font-black text-slate-900 flex items-center gap-1">
+                <Layers className="w-4 h-4 text-emerald-600" /> 토지 용도지역 및 행위제한
+              </span>
+              <div className="flex flex-wrap gap-4 text-slate-700">
+                <span>용도지역: <strong>{analysisResult.landUse.zoningArea}</strong></span>
+                <span>용도지구: <strong>{analysisResult.landUse.zoningDistrict}</strong></span>
+                <span>지구단위계획: <strong>{String(analysisResult.landUse.districtPlan)}</strong></span>
+              </div>
+              <ul className="list-disc list-inside text-slate-600 space-y-1 pt-1">
+                {analysisResult.landUse.restrictions.map((res, i) => (
+                  <li key={i}>{res}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Official Data Sources Matrix */}
+            <div className="space-y-2 pt-2">
+              <span className="text-xs font-black text-slate-900 block">공공데이터 출처 및 기준일자</span>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {analysisResult.sources.map((src, i) => (
+                  <div key={i} className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1">
+                    <span className="text-[10px] font-black text-blue-600 block">{src.provider}</span>
+                    <strong className="text-slate-900 block truncate">{src.dataset}</strong>
+                    <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                      <span>{new Date(src.retrievedAt).toLocaleDateString()}</span>
+                      <a
+                        href={src.officialUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline inline-flex items-center gap-0.5 font-bold"
+                      >
+                        공식포털 <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
         </div>
@@ -791,7 +911,7 @@ export const LocationAnalysisView: React.FC<LocationAnalysisViewProps> = ({
         <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-blue-600" /> 저장된 점포 입지 분석 히스토리
+              <Bookmark className="w-5 h-5 text-blue-600" /> 저장된 점포·상권 분석 히스토리
             </h3>
             <span className="text-xs font-bold text-slate-500">
               총 {project.locationAnalyses.length}개 저장됨 (클라우드 동기화)
