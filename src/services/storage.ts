@@ -423,7 +423,18 @@ export async function initAppState(): Promise<{
   try {
     const cloudRes = await fetchCloudAppState();
 
-    if (cloudRes.success && cloudRes.state && Array.isArray(cloudRes.state.projects) && cloudRes.state.projects.length > 0) {
+    if (!cloudRes.success) {
+      console.warn('Failed to load from cloud; using local cache:', cloudRes.error);
+      updateCloudStatus('error', `⚠ 클라우드 연결 실패 (${cloudRes.error || '오류'}) - 로컬 캐시 사용`);
+      const localProjects = loadProjects();
+      return {
+        projects: localProjects,
+        activeProjectId: getActiveProjectId(),
+        source: 'local_fallback',
+      };
+    }
+
+    if (cloudRes.state && Array.isArray(cloudRes.state.projects) && cloudRes.state.projects.length > 0) {
       // 2. Cloud data exists -> Source of Truth
       const cloudProjects = cloudRes.state.projects;
       saveProjectsLocally(cloudProjects);

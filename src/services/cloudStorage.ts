@@ -35,7 +35,13 @@ export function getCloudEndpoint(): string {
   } catch {
     // localStorage might fail in restricted environments
   }
-  return (import.meta.env.VITE_GOOGLE_SHEETS_API_URL || DEFAULT_CLOUD_ENDPOINT).trim();
+  const envUrl =
+    typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_GOOGLE_SHEETS_API_URL
+      ? (import.meta as any).env.VITE_GOOGLE_SHEETS_API_URL
+      : typeof process !== 'undefined'
+      ? process.env?.VITE_GOOGLE_SHEETS_API_URL
+      : undefined;
+  return (envUrl || DEFAULT_CLOUD_ENDPOINT).trim();
 }
 
 /**
