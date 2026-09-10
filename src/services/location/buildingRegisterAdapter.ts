@@ -150,11 +150,17 @@ export async function getBuildingRegister(
       const isSan = address.pnu.length >= 11 && address.pnu[10] === '2';
       const platGbCd = isSan ? '1' : '0';
 
-      const url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${encodeURIComponent(
-        serviceKey
+      const cleanKey = serviceKey.trim();
+      let url = `http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${encodeURIComponent(
+        cleanKey
       )}&sigunguCd=${address.sggCd}&bjdongCd=${address.bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
 
-      const res = await fetch(url);
+      let res = await fetch(url);
+      if (!res.ok) {
+        url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${cleanKey}&sigunguCd=${address.sggCd}&bjdongCd=${address.bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
+        res = await fetch(url);
+      }
+
       if (res.ok) {
         const text = await res.text();
         let data: any = null;
@@ -165,12 +171,12 @@ export async function getBuildingRegister(
         }
 
         const items = data?.response?.body?.items?.item;
-        const item = Array.isArray(items) ? items[0] : items;
+        const item = Array.isArray(items) ? items[0] : (items && typeof items === 'object' && Object.keys(items).length > 0 ? items : null);
 
-        if (item) {
+        if (item && item.mainPurpsCdNm) {
           const mainPurpose = item.mainPurpsCdNm || '제2종근린생활시설';
           const etcPurpose = item.etcPurps || item.etcPurpsNm || '상가 및 근린생활시설';
-          const buildingName = item.bldNm || `${address.bjdong} 상가건물`;
+          const buildingName = (item.bldNm && item.bldNm.trim()) ? item.bldNm.trim() : `${address.bjdong} 일반상가`;
           const classification = classifyBuildingPurpose(mainPurpose, etcPurpose, businessType);
 
           return {

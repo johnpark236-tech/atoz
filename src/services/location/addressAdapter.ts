@@ -306,46 +306,60 @@ export async function geocodeAddress(
   // 1. Try Live VWorld Geocoder API if key exists
   if (vworldApiKey) {
     try {
-      const vworldUrl = `https://api.vworld.kr/req/address?service=address&request=getCoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(
+      const isRoad = Boolean(parsed.roadName) && !rawAddress.includes('번지');
+      const primaryType = isRoad ? 'ROAD' : 'PARCEL';
+      const secondaryType = isRoad ? 'PARCEL' : 'ROAD';
+
+      let vworldUrl = `https://api.vworld.kr/req/address?service=address&request=getCoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(
         rawAddress
-      )}&refine=true&simple=false&format=json&type=BOTH&key=${vworldApiKey}`;
+      )}&refine=true&simple=false&format=json&type=${primaryType}&key=${vworldApiKey}`;
 
-      const res = await fetch(vworldUrl);
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.response?.status === 'OK' && data.response.result?.point) {
-          const point = data.response.result.point;
-          const lat = parseFloat(point.y);
-          const lng = parseFloat(point.x);
-          const refinedRoad = data.response.refined?.structure?.road || parsed.fullRoadAddress;
-          const refinedJibun = data.response.refined?.structure?.parcel || parsed.fullJibunAddress;
+      let res = await fetch(vworldUrl);
+      let data: any = res.ok ? await res.json() : null;
 
-          // Find admin code
-          const adminEntry = ADMIN_CODE_DB.find(
-            (e) => e.sido.includes(parsed.sido) && e.sigungu.includes(parsed.sigungu)
-          );
-          const dongEntry = adminEntry?.dongs[parsed.bjdong];
-          const sggCd = adminEntry?.sggCd || '44131';
-          const bjdongCd = dongEntry?.bjdongCd || '11400';
-          const pnu = buildPNU(sggCd, bjdongCd, parsed.isSan, parsed.bun, parsed.ji);
+      if (data?.response?.status !== 'OK') {
+        vworldUrl = `https://api.vworld.kr/req/address?service=address&request=getCoord&version=2.0&crs=epsg:4326&address=${encodeURIComponent(
+          rawAddress
+        )}&refine=true&simple=false&format=json&type=${secondaryType}&key=${vworldApiKey}`;
+        res = await fetch(vworldUrl);
+        data = res.ok ? await res.json() : null;
+      }
 
-          return {
-            rawAddress,
-            roadAddress: refinedRoad,
-            jibunAddress: refinedJibun,
-            lat,
-            lng,
-            sido: parsed.sido,
-            sigungu: parsed.sigungu,
-            bjdong: parsed.bjdong,
-            pnu,
-            sggCd,
-            bjdongCd,
-            bun: parsed.bun.padStart(4, '0'),
-            ji: parsed.ji.padStart(4, '0'),
-            sourceStatus: 'LIVE_API',
-          };
-        }
+      if (data?.response?.status === 'OK' && data.response.result?.point) {
+        const point = data.response.result.point;
+        const lat = parseFloat(point.y);
+        const lng = parseFloat(point.x);
+        const refined = data.response.refined;
+        const refinedRoad = refined?.structure?.road || refined?.text || parsed.fullRoadAddress;
+        const refinedJibun = refined?.structure?.parcel || parsed.fullJibunAddress;
+        const livePnu = refined?.structure?.level4LC || refined?.structure?.level4AC || '';
+
+        // Find admin code
+        const adminEntry = ADMIN_CODE_DB.find(
+          (e) => e.sido.includes(parsed.sido) && e.sigungu.includes(parsed.sigungu)
+        );
+        const dongEntry = adminEntry?.dongs[parsed.bjdong];
+        const sggCd = adminEntry?.sggCd || (livePnu ? livePnu.slice(0, 5) : '44131');
+        const bjdongCd = dongEntry?.bjdongCd || (livePnu ? livePnu.slice(5, 10) : '11400');
+        const pnu = livePnu && livePnu.length === 19 ? livePnu : buildPNU(sggCd, bjdongCd, parsed.isSan, parsed.bun, parsed.ji);
+
+        return {
+          rawAddress,
+          roadAddress: refinedRoad,
+          jibunAddress: refinedJibun,
+          lat,
+          lng,
+          sido: refined?.structure?.level1 || parsed.sido,
+          sigungu: refined?.structure?.level2 || parsed.sigungu,
+          bjdong: refined?.structure?.level4L || parsed.bjdong,
+          hjdong: refined?.structure?.level4A,
+          pnu,
+          sggCd,
+          bjdongCd,
+          bun: parsed.bun.padStart(4, '0'),
+          ji: parsed.ji.padStart(4, '0'),
+          sourceStatus: 'LIVE_API',
+        };
       }
     } catch (err) {
       console.warn('VWorld geocoding failed, falling back to built-in GIS database:', err);

@@ -92,17 +92,25 @@ export async function getCommercialAreaSummary(
   // 1. Live Public API Call if Service Key is provided
   if (serviceKey) {
     try {
-      const url = `https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius?serviceKey=${encodeURIComponent(
-        serviceKey
-      )}&radius=${radius}&cx=${centerLng}&cy=${centerLat}&type=json&numOfRows=100`;
+      const cleanKey = serviceKey.trim();
+      let url = `https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius?serviceKey=${encodeURIComponent(
+        cleanKey
+      )}&radius=${radius}&cx=${centerLng}&cy=${centerLat}&type=json&numOfRows=500`;
 
-      const res = await fetch(url);
-      if (res.ok) {
-        const json = await res.json();
-        const items = json?.body?.items || json?.response?.body?.items || [];
-        const rawList = Array.isArray(items) ? items : (items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : []);
+      let res = await fetch(url);
+      let json = res.ok ? await res.json() : null;
 
-        if (rawList.length > 0) {
+      if (!json || (!json.body && !json.response)) {
+        // Retry with unencoded key if needed
+        url = `https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInRadius?serviceKey=${cleanKey}&radius=${radius}&cx=${centerLng}&cy=${centerLat}&type=json&numOfRows=500`;
+        res = await fetch(url);
+        json = res.ok ? await res.json() : null;
+      }
+
+      const items = json?.body?.items || json?.response?.body?.items || [];
+      const rawList = Array.isArray(items) ? items : (items.item ? (Array.isArray(items.item) ? items.item : [items.item]) : []);
+
+      if (rawList.length > 0) {
           const stores: CommercialStore[] = rawList.map((item: any, idx: number) => {
             const lat = parseFloat(item.lat || item.y || 0);
             const lng = parseFloat(item.lon || item.x || 0);
@@ -176,7 +184,6 @@ export async function getCommercialAreaSummary(
             sourceStatus: 'LIVE_API',
           };
         }
-      }
     } catch (err) {
       console.warn('Commercial area API call failed, generating realistic GIS reference dataset:', err);
     }

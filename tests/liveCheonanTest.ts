@@ -1,7 +1,7 @@
 import { analyzeLocation } from '../src/services/location/locationAnalysisService';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: ['.env.local', '.env'] });
 
 async function runLiveTest() {
   console.log('================================================================');
