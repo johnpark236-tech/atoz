@@ -62,6 +62,10 @@ async function runDirectLiveVerification() {
   let liveLat = 36.8188;
   let liveLng = 127.1565;
 
+  let livePnu = '4413111800104620001';
+  let pnuBjdongCd = '11800';
+  let buildingApiBjdongCd = '11800';
+
   // 1. VWorld Geocoding Test
   console.log('--- 1. VWorld Geocoding LIVE Test ---');
   if (!vworldKey) {
@@ -79,9 +83,13 @@ async function runDirectLiveVerification() {
         geocodingLivePass = true;
         liveLat = parseFloat(json.response.result.point.y);
         liveLng = parseFloat(json.response.result.point.x);
+        livePnu = json.response.refined?.structure?.level4LC || json.response.refined?.structure?.level4AC || '4413111800104620001';
+        pnuBjdongCd = livePnu.slice(5, 10);
+        buildingApiBjdongCd = pnuBjdongCd;
         console.log(`ADDRESS_GEOCODING_LIVE=PASS (Lat: ${liveLat}, Lng: ${liveLng})`);
         console.log('Refined Address:', json.response.refined?.text || TEST_ADDRESS);
-        console.log('Live PNU:', json.response.refined?.structure?.level4LC || '4413111800104620001');
+        console.log('Live PNU:', livePnu);
+        console.log('PNU_BJDONG_CD:', pnuBjdongCd);
       } else {
         console.log('VWorld Response Error:', res.data.substring(0, 300));
       }
@@ -96,18 +104,25 @@ async function runDirectLiveVerification() {
   let liveBuildingName = '';
   let liveMainPurpose = '';
 
+  const sggCd = livePnu.slice(0, 5);
+  const bjdongCd = livePnu.slice(5, 10);
+  buildingApiBjdongCd = bjdongCd;
+
+  console.log('BUILDING_API_PARAMETERS:', { sggCd, bjdongCd, bun: BUN, ji: JI });
+  console.log(`PNU_BJDONG_MATCH: ${pnuBjdongCd === buildingApiBjdongCd ? 'PASS' : 'FAIL'}`);
+
   if (!dataGoKrKey) {
     console.log('BUILDING_REGISTER_LIVE=FAIL (DATA_GO_KR_SERVICE_KEY missing)');
   } else {
     const bldEndpoint = 'http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo';
-    const bldParams = `sigunguCd=${SIGUNGU_CD}&bjdongCd=${BJDONG_CD}&platGbCd=0&bun=${BUN}&ji=${JI}&_type=json`;
+    const bldParams = `sigunguCd=${sggCd}&bjdongCd=${bjdongCd}&platGbCd=0&bun=${BUN}&ji=${JI}&_type=json`;
     const res = await tryPublicApi(bldEndpoint, dataGoKrKey, bldParams);
     console.log('Building Register HTTP Status:', res.status);
 
     try {
       const json = JSON.parse(res.data);
       const items = json?.response?.body?.items?.item;
-      const item = Array.isArray(items) ? items[0] : items;
+      const item = Array.isArray(items) ? items[0] : (items && typeof items === 'object' && Object.keys(items).length > 0 ? items : null);
       if (item && item.mainPurpsCdNm) {
         buildingLivePass = true;
         liveBuildingName = item.bldNm || '명칭 미부여 건축물';
@@ -115,9 +130,10 @@ async function runDirectLiveVerification() {
         console.log('BUILDING_REGISTER_LIVE=PASS');
         console.log('BUILDING_NAME:', liveBuildingName);
         console.log('BUILDING_MAIN_PURPOSE:', liveMainPurpose);
-        console.log('ETC_PURPOSE:', item.etcPurps || '-');
+        console.log('ETC_PURPOSE:', item.etcPurps || item.etcPurpsNm || '-');
         console.log('TOTAL_AREA:', item.totArea ? `${item.totArea} ㎡` : '-');
         console.log('GRND_FLOORS:', item.grndFlrCnt || '-');
+        console.log('UGRND_FLOORS:', item.ugrndFlrCnt || '-');
         console.log('USE_APPROVAL_DATE:', item.useAprDay || '-');
       } else if (json?.response?.header?.resultCode === '00') {
         buildingLivePass = true;

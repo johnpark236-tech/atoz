@@ -14,7 +14,7 @@ const ADMIN_CODE_DB: AdminCodeEntry[] = [
     sigungu: '천안시 동남구',
     sggCd: '44131',
     dongs: {
-      신부동: { bjdongCd: '11400', defaultLat: 36.8188, defaultLng: 127.1565 },
+      신부동: { bjdongCd: '11800', defaultLat: 36.8188, defaultLng: 127.1565 },
       대흥동: { bjdongCd: '10100', defaultLat: 36.8085, defaultLng: 127.1485 },
       원성동: { bjdongCd: '10600', defaultLat: 36.8032, defaultLng: 127.1612 },
       청수동: { bjdongCd: '11800', defaultLat: 36.7865, defaultLng: 127.1542 },
@@ -334,14 +334,17 @@ export async function geocodeAddress(
         const refinedJibun = refined?.structure?.parcel || parsed.fullJibunAddress;
         const livePnu = refined?.structure?.level4LC || refined?.structure?.level4AC || '';
 
-        // Find admin code
+        // Find admin code fallback if livePnu is not available
         const adminEntry = ADMIN_CODE_DB.find(
           (e) => e.sido.includes(parsed.sido) && e.sigungu.includes(parsed.sigungu)
         );
         const dongEntry = adminEntry?.dongs[parsed.bjdong];
-        const sggCd = adminEntry?.sggCd || (livePnu ? livePnu.slice(0, 5) : '44131');
-        const bjdongCd = dongEntry?.bjdongCd || (livePnu ? livePnu.slice(5, 10) : '11400');
-        const pnu = livePnu && livePnu.length === 19 ? livePnu : buildPNU(sggCd, bjdongCd, parsed.isSan, parsed.bun, parsed.ji);
+        const fallbackSgg = adminEntry?.sggCd || '44131';
+        const fallbackBjdong = dongEntry?.bjdongCd || '11800';
+
+        const pnu = livePnu && livePnu.length === 19 ? livePnu : buildPNU(fallbackSgg, fallbackBjdong, parsed.isSan, parsed.bun, parsed.ji);
+        const sggCd = pnu.slice(0, 5);
+        const bjdongCd = pnu.slice(5, 10);
 
         return {
           rawAddress,
@@ -368,7 +371,7 @@ export async function geocodeAddress(
 
   // 2. Built-in High Precision GIS Admin Database Lookup
   let sggCd = '44131';
-  let bjdongCd = '11400';
+  let bjdongCd = '11800';
   let lat = 36.8188;
   let lng = 127.1565;
 

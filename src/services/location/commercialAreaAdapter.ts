@@ -185,99 +185,23 @@ export async function getCommercialAreaSummary(
           };
         }
     } catch (err) {
-      console.warn('Commercial area API call failed, generating realistic GIS reference dataset:', err);
+      console.warn('Commercial area API call failed:', err);
     }
   }
 
-  // 2. High-Accuracy GIS Reference Dataset Generator based on Coordinates & Business Type
-  const isCommercialHub =
-    address.rawAddress.includes('신부동') ||
-    address.rawAddress.includes('불당동') ||
-    address.rawAddress.includes('역삼동') ||
-    address.rawAddress.includes('서교동');
-
-  const baseCount = isCommercialHub
-    ? radius === 300 ? 120 : radius === 500 ? 320 : 750
-    : radius === 300 ? 35 : radius === 500 ? 95 : 240;
-
-  // Generate realistic representative competitor stores positioned accurately within radius
-  const sampleCompetitorBlueprints = [
-    { name: '투썸플레이스', branch: `${address.bjdong}점`, major: '음식', mid: '커피점/카페', sub: '커피전문점', distRatio: 0.18, angle: 45 },
-    { name: '스타벅스', branch: `${address.bjdong}중앙점`, major: '음식', mid: '커피점/카페', sub: '커피전문점', distRatio: 0.32, angle: 110 },
-    { name: '메가MGC커피', branch: `${address.bjdong}로데오점`, major: '음식', mid: '커피점/카페', sub: '커피전문점', distRatio: 0.12, angle: 220 },
-    { name: '이디야커피', branch: `${address.bjdong}역점`, major: '음식', mid: '커피점/카페', sub: '커피전문점', distRatio: 0.45, angle: 315 },
-    { name: '컴포즈커피', branch: `${address.bjdong}학원가점`, major: '음식', mid: '커피점/카페', sub: '커피전문점', distRatio: 0.28, angle: 80 },
-    { name: '파리바게뜨', branch: `${address.bjdong}점`, major: '음식', mid: '제과제빵떡케익', sub: '제과점', distRatio: 0.25, angle: 170 },
-    { name: '뚜레쥬르', branch: `${address.bjdong}점`, major: '음식', mid: '제과제빵떡케익', sub: '제과점', distRatio: 0.48, angle: 260 },
-    { name: 'CU', branch: `${address.bjdong}중앙점`, major: '소매', mid: '종합소매점', sub: '편의점', distRatio: 0.08, angle: 10 },
-    { name: 'GS25', branch: `${address.bjdong}프라자점`, major: '소매', mid: '종합소매점', sub: '편의점', distRatio: 0.22, angle: 190 },
-    { name: '세븐일레븐', branch: `${address.bjdong}역전점`, major: '소매', mid: '종합소매점', sub: '편의점', distRatio: 0.38, angle: 290 },
-    { name: '올리브영', branch: `${address.bjdong}대로점`, major: '소매', mid: '화장품소매', sub: '화장품전문점', distRatio: 0.21, angle: 95 },
-    { name: '준오헤어', branch: `${address.bjdong}점`, major: '생활서비스', mid: '이용/미용', sub: '미용실', distRatio: 0.35, angle: 140 },
-    { name: '토리헤어', branch: `${address.bjdong}점`, major: '생활서비스', mid: '이용/미용', sub: '미용실', distRatio: 0.42, angle: 230 },
-    { name: '정철어학원', branch: '천안캠퍼스', major: '학원/교육', mid: '외국어학원', sub: '영어학원', distRatio: 0.31, angle: 60 },
-    { name: '세종한국어외국어학원', branch: `${address.bjdong}원`, major: '학원/교육', mid: '외국어학원', sub: '외국어학원/한국어교습', distRatio: 0.29, angle: 130 },
-    { name: '명문수학전문학원', branch: '본원', major: '학원/교육', mid: '학문/교육', sub: '보습학원', distRatio: 0.44, angle: 340 },
-    { name: '필라테스인', branch: `${address.bjdong}스튜디오`, major: '스포츠/레저', mid: '체육시설', sub: '필라테스/요가', distRatio: 0.24, angle: 180 },
-    { name: '바디스톤 피트니스', branch: `${address.bjdong}점`, major: '스포츠/레저', mid: '체육시설', sub: '헬스클럽', distRatio: 0.52, angle: 25 },
-    { name: '김밥천국', branch: `${address.bjdong}점`, major: '음식', mid: '분식', sub: '김밥전문점', distRatio: 0.15, angle: 270 },
-    { name: '교촌치킨', branch: `${address.bjdong}점`, major: '음식', mid: '닭/오리요리', sub: '치킨전문점', distRatio: 0.39, angle: 160 },
-  ];
-
-  const generatedStores: CommercialStore[] = sampleCompetitorBlueprints.map((bp, i) => {
-    const dist = Math.round(bp.distRatio * radius);
-    const rad = (bp.angle * Math.PI) / 180;
-    // approx 1 deg lat ~ 111,000m, 1 deg lng ~ 88,800m
-    const dLat = (dist * Math.cos(rad)) / 111000;
-    const dLng = (dist * Math.sin(rad)) / 88800;
-    const lat = Number((centerLat + dLat).toFixed(6));
-    const lng = Number((centerLng + dLng).toFixed(6));
-    const match = matchStoreCategory(bp.name, bp.major, bp.mid, bp.sub, businessType);
-
-    return {
-      id: `store-ref-${i + 1}`,
-      name: bp.name,
-      branch: bp.branch,
-      mainCategory: bp.major,
-      midCategory: bp.mid,
-      subCategory: bp.sub,
-      industryCode: `SC-${1000 + i}`,
-      address: `${address.sido} ${address.sigungu} ${address.bjdong} ${100 + i}`,
-      roadAddress: `${address.sido} ${address.sigungu} ${address.roadName || address.bjdong} ${20 + i}`,
-      lat,
-      lng,
-      distance: dist,
-      isSameCategory: match.isSame,
-      isSimilarCategory: match.isSimilar,
-    };
-  });
-
-  generatedStores.sort((a, b) => a.distance - b.distance);
-
-  // Category counts ratio estimation
-  const catDist = [
-    { category: '음식점 및 카페', count: Math.round(baseCount * 0.42), percentage: 42 },
-    { category: '소매 및 편의점', count: Math.round(baseCount * 0.22), percentage: 22 },
-    { category: '생활서비스 및 미용', count: Math.round(baseCount * 0.16), percentage: 16 },
-    { category: '학원 및 교육시설', count: Math.round(baseCount * 0.12), percentage: 12 },
-    { category: '스포츠 및 여가', count: Math.round(baseCount * 0.05), percentage: 5 },
-    { category: '의료 및 약국', count: Math.round(baseCount * 0.03), percentage: 3 },
-  ];
-
-  const sameCount = generatedStores.filter((s) => s.isSameCategory).length || Math.round(baseCount * 0.06);
-  const similarCount = generatedStores.filter((s) => s.isSimilarCategory).length || Math.round(baseCount * 0.14);
-
+  // 2. Pure Non-Mock Fallback (Zero fake data)
   return {
     radius,
-    totalStoreCount: baseCount,
-    categoryCounts: catDist,
-    sameCategoryCount: sameCount,
-    similarCategoryCount: similarCount,
-    densityLevel: isCommercialHub ? (radius >= 500 ? 'VERY_HIGH' : 'HIGH') : 'MEDIUM',
-    densityDescription: isCommercialHub
-      ? '유동 점포와 식음료·학원·편의시설 밀집도가 높은 상업 중심지입니다.'
-      : '주거 배후수요를 중심으로 점포가 형성된 안정형 상권입니다.',
-    competitors: generatedStores,
-    sourceStatus: serviceKey ? 'DATA_UNAVAILABLE' : 'REFERENCE_DATA',
+    totalStoreCount: 0,
+    categoryCounts: [],
+    sameCategoryCount: 0,
+    similarCategoryCount: 0,
+    densityLevel: 'LOW',
+    densityDescription: serviceKey
+      ? '상권 점포 데이터를 조회하지 못했거나 반경 내 점포가 없습니다.'
+      : '공공데이터포털 API 키(DATA_GO_KR_SERVICE_KEY) 설정이 필요합니다.',
+    competitors: [],
+    sourceStatus: serviceKey ? 'DATA_UNAVAILABLE' : 'API_KEY_REQUIRED',
   };
 }
+

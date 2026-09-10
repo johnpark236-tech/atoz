@@ -142,22 +142,25 @@ export async function getBuildingRegister(
   businessType: string = '',
   serviceKey?: string
 ): Promise<BuildingInfo> {
+  // Extract sigunguCd and bjdongCd directly from PNU if available
+  const sggCd = address.pnu && address.pnu.length === 19 ? address.pnu.slice(0, 5) : address.sggCd;
+  const bjdongCd = address.pnu && address.pnu.length === 19 ? address.pnu.slice(5, 10) : address.bjdongCd;
+  const isSan = address.pnu.length >= 11 && address.pnu[10] === '2';
+  const platGbCd = isSan ? '1' : '0';
+  const bunPadded = address.bun.padStart(4, '0');
+  const jiPadded = address.ji.padStart(4, '0');
+
   // 1. Live Public API Call if Service Key is provided
   if (serviceKey) {
     try {
-      const bunPadded = address.bun.padStart(4, '0');
-      const jiPadded = address.ji.padStart(4, '0');
-      const isSan = address.pnu.length >= 11 && address.pnu[10] === '2';
-      const platGbCd = isSan ? '1' : '0';
-
       const cleanKey = serviceKey.trim();
       let url = `http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${encodeURIComponent(
         cleanKey
-      )}&sigunguCd=${address.sggCd}&bjdongCd=${address.bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
+      )}&sigunguCd=${sggCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
 
       let res = await fetch(url);
       if (!res.ok) {
-        url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${cleanKey}&sigunguCd=${address.sggCd}&bjdongCd=${address.bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
+        url = `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo?serviceKey=${cleanKey}&sigunguCd=${sggCd}&bjdongCd=${bjdongCd}&platGbCd=${platGbCd}&bun=${bunPadded}&ji=${jiPadded}&_type=json&numOfRows=10`;
         res = await fetch(url);
       }
 
@@ -167,7 +170,7 @@ export async function getBuildingRegister(
         try {
           data = JSON.parse(text);
         } catch {
-          // Sometimes returned as XML or error JSON
+          // Sometimes XML
         }
 
         const items = data?.response?.body?.items?.item;
@@ -175,9 +178,16 @@ export async function getBuildingRegister(
 
         if (item && item.mainPurpsCdNm) {
           const mainPurpose = item.mainPurpsCdNm || '제2종근린생활시설';
-          const etcPurpose = item.etcPurps || item.etcPurpsNm || '상가 및 근린생활시설';
-          const buildingName = (item.bldNm && item.bldNm.trim()) ? item.bldNm.trim() : `${address.bjdong} 일반상가`;
+          const etcPurpose = item.etcPurps || item.etcPurpsNm || '';
+          const buildingName = (item.bldNm && item.bldNm.trim()) ? item.bldNm.trim() : `${address.bjdong} 일반건축물`;
           const classification = classifyBuildingPurpose(mainPurpose, etcPurpose, businessType);
+
+          const indrMech = parseInt(item.indrMechUtcnt || '0', 10);
+          const indrAuto = parseInt(item.indrAutoUtcnt || '0', 10);
+          const oudrMech = parseInt(item.oudrMechUtcnt || '0', 10);
+          const oudrAuto = parseInt(item.oudrAutoUtcnt || '0', 10);
+          const calcParking = indrMech + indrAuto + oudrMech + oudrAuto;
+          const parkingCnt = item.totPkngCnt ? parseInt(item.totPkngCnt, 10) : (calcParking > 0 ? calcParking : null);
 
           return {
             buildingName,
@@ -185,7 +195,7 @@ export async function getBuildingRegister(
             roadAddress: item.newPlatPlc || address.roadAddress,
             mainPurpose,
             etcPurpose,
-            structure: item.strctCdNm || '철근콘크리트구조',
+            structure: item.strctCdNm || item.etcStrct || '',
             platArea: item.platArea ? parseFloat(item.platArea) : null,
             archArea: item.archArea ? parseFloat(item.archArea) : null,
             totArea: item.totArea ? parseFloat(item.totArea) : null,
@@ -194,7 +204,7 @@ export async function getBuildingRegister(
             grndFlrCnt: item.grndFlrCnt ? parseInt(item.grndFlrCnt, 10) : null,
             ugrndFlrCnt: item.ugrndFlrCnt ? parseInt(item.ugrndFlrCnt, 10) : null,
             rideUseElvtCnt: item.rideUseElvtCnt ? parseInt(item.rideUseElvtCnt, 10) : 0,
-            parkingCnt: item.totPkngCnt ? parseInt(item.totPkngCnt, 10) : (item.indrAutoUtcnt ? parseInt(item.indrAutoUtcnt, 10) : 0),
+            parkingCnt,
             pmsDay: item.pmsDay || null,
             stcnsDay: item.stcnsDay || null,
             useAprDay: item.useAprDay || null,
@@ -204,103 +214,34 @@ export async function getBuildingRegister(
         }
       }
     } catch (err) {
-      console.warn('Building register API call failed, using high-accuracy fallback:', err);
+      console.warn('Building register API call failed:', err);
     }
   }
 
-  // 2. High-Accuracy Reference / Fallback Logic based on Address and Area Characteristics
-  const isApartment = address.rawAddress.includes('아파트') || address.rawAddress.includes('맨션');
-  const isSingleHouse = address.rawAddress.includes('단독') || address.rawAddress.includes('주택');
-  const isCommercialHub =
-    address.rawAddress.includes('신부동') ||
-    address.rawAddress.includes('불당동') ||
-    address.rawAddress.includes('역삼동') ||
-    address.rawAddress.includes('서교동') ||
-    address.rawAddress.includes('정자동');
-
-  let mainPurpose = '제2종근린생활시설';
-  let etcPurpose = '근린생활시설 (일반음식점, 학원, 사무소 등)';
-  let buildingName = `${address.bjdong} 근린빌딩`;
-  let structure = '철근콘크리트구조';
-  let grndFlrCnt: number | null = 5;
-  let ugrndFlrCnt: number | null = 1;
-  let platArea: number | null = 452.8;
-  let archArea: number | null = 268.4;
-  let totArea: number | null = 1385.6;
-  let bcRat: number | null = 59.28;
-  let vlRat: number | null = 248.5;
-  let parkingCnt: number | null = 8;
-  let rideUseElvtCnt: number | null = 1;
-  let useAprDay: string | null = '2016-05-18';
-  let pmsDay: string | null = '2015-08-10';
-  let stcnsDay: string | null = '2015-10-15';
-
-  if (isApartment) {
-    mainPurpose = '공동주택';
-    etcPurpose = '아파트 및 부대복리시설';
-    buildingName = `${address.bjdong} 현대팰리스`;
-    grndFlrCnt = 18;
-    ugrndFlrCnt = 2;
-    platArea = 12450.0;
-    archArea = 2150.0;
-    totArea = 38500.0;
-    bcRat = 17.27;
-    vlRat = 239.5;
-    parkingCnt = 280;
-    rideUseElvtCnt = 6;
-  } else if (isSingleHouse) {
-    mainPurpose = '단독주택';
-    etcPurpose = '단독주택 (1가구)';
-    buildingName = `${address.bjdong} 단독주택`;
-    structure = '벽돌구조';
-    grndFlrCnt = 2;
-    ugrndFlrCnt = 0;
-    platArea = 185.0;
-    archArea = 92.5;
-    totArea = 165.0;
-    bcRat = 50.0;
-    vlRat = 89.19;
-    parkingCnt = 1;
-    rideUseElvtCnt = 0;
-    useAprDay = '2004-11-03';
-  } else if (isCommercialHub) {
-    mainPurpose = '제2종근린생활시설';
-    etcPurpose = '제1·2종근린생활시설 및 업무시설';
-    buildingName = `${address.bjdong} 센트럴프라자`;
-    grndFlrCnt = 7;
-    ugrndFlrCnt = 2;
-    platArea = 680.5;
-    archArea = 408.3;
-    totArea = 2850.4;
-    bcRat = 60.0;
-    vlRat = 345.8;
-    parkingCnt = 16;
-    rideUseElvtCnt = 2;
-    useAprDay = '2018-09-24';
-  }
-
-  const classification = classifyBuildingPurpose(mainPurpose, etcPurpose, businessType);
+  // 2. Pure Non-Mock Fallback (Zero fake data)
+  const defaultMainPurpose = '대장 미등재 / 필지';
+  const defaultClassification = classifyBuildingPurpose(defaultMainPurpose, '', businessType);
 
   return {
-    buildingName,
+    buildingName: '대장 미등재 건축물 / 필지',
     jibunAddress: address.jibunAddress,
     roadAddress: address.roadAddress,
-    mainPurpose,
-    etcPurpose,
-    structure,
-    platArea,
-    archArea,
-    totArea,
-    bcRat,
-    vlRat,
-    grndFlrCnt,
-    ugrndFlrCnt,
-    rideUseElvtCnt,
-    parkingCnt,
-    pmsDay,
-    stcnsDay,
-    useAprDay,
+    mainPurpose: defaultMainPurpose,
+    etcPurpose: '',
+    structure: '',
+    platArea: null,
+    archArea: null,
+    totArea: null,
+    bcRat: null,
+    vlRat: null,
+    grndFlrCnt: null,
+    ugrndFlrCnt: null,
+    rideUseElvtCnt: null,
+    parkingCnt: null,
+    pmsDay: null,
+    stcnsDay: null,
+    useAprDay: null,
     sourceStatus: serviceKey ? 'NOT_FOUND' : 'API_KEY_REQUIRED',
-    classification,
+    classification: defaultClassification,
   };
 }
