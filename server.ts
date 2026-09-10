@@ -12,9 +12,47 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json());
+  // CORS middleware supporting GitHub Pages and local development
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      "https://johnpark236-tech.github.io",
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:8080",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:8080",
+    ];
+
+    if (
+      origin &&
+      (allowedOrigins.includes(origin) ||
+        origin.endsWith(".github.io") ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1"))
+    ) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    } else if (!origin) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+    }
+
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, Accept"
+    );
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
+  app.use(express.json({ limit: "10mb" }));
 
   // Initialize Gemini lazily
   let aiClient: GoogleGenAI | null = null;
@@ -38,6 +76,11 @@ async function startServer() {
       status: "ok",
       service: "BizFlow AtoZ API",
       hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+      marketResearchModel:
+        process.env.GEMINI_MARKET_RESEARCH_MODEL ||
+        process.env.GEMINI_MODEL ||
+        "gemini-2.5-flash",
+      searchGroundingAvailable: Boolean(process.env.GEMINI_API_KEY),
       timestamp: new Date().toISOString(),
     });
   });
@@ -81,8 +124,13 @@ async function startServer() {
 ${question}
 `;
 
+        const modelName =
+          process.env.GEMINI_CONSULT_MODEL ||
+          process.env.GEMINI_MODEL ||
+          "gemini-2.5-flash";
+
         const response = await client.models.generateContent({
-          model: "gemini-3.8-flash",
+          model: modelName,
           contents: promptContext,
           config: {
             systemInstruction,
@@ -92,7 +140,7 @@ ${question}
 
         return res.json({
           reply: response.text || "답변을 생성하지 못했습니다. 다시 시도해주세요.",
-          source: "gemini-3.8-flash",
+          source: modelName,
           disclaimer: "공식기관 확인 필요",
         });
       }
@@ -230,29 +278,33 @@ ${question}
     }
   });
 
-  // Market Research API endpoint
+  // Market Research API endpoint with Google Search grounding
   app.post("/api/market-research", async (req, res) => {
     try {
-      const { prompt, form } = req.body;
-      const client = getGeminiClient();
-
-      if (client && prompt) {
-        const response = await client.models.generateContent({
-          model: "gemini-3.8-flash",
-          contents: prompt,
-          config: {
-            temperature: 0.7,
-          },
-        });
-
-        return res.json({
-          report: response.text || "시장조사 보고서를 생성하지 못했습니다.",
-          source: "gemini-3.8-flash",
+      const { prompt } = req.body;
+      if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+        return res.status(400).json({
+          error: "시장조사 프롬프트 내용이 필요합니다.",
         });
       }
 
+      const client = getGeminiClient();
+
+      if (client) {
+        const { executeMarketResearch } = await import(
+          "./src/services/marketResearch/marketResearchService"
+        );
+
+        const result = await executeMarketResearch({
+          client,
+          prompt: prompt.trim(),
+        });
+
+        return res.json(result);
+      }
+
       return res.status(503).json({
-        error: "AI 시장조사 모델이 준비되지 않았습니다.",
+        error: "AI 시장조사 모델이 준비되지 않았습니다. GEMINI_API_KEY를 확인하세요.",
       });
     } catch (err: any) {
       console.error("Market research error:", err);
