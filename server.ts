@@ -181,6 +181,88 @@ ${question}
     }
   });
 
+  // Location Analysis Health Endpoint
+  app.get("/api/location/health", (req, res) => {
+    res.json({
+      status: "ok",
+      hasDataGoKrKey: Boolean(process.env.DATA_GO_KR_SERVICE_KEY || process.env.PUBLIC_DATA_PORTAL_KEY),
+      hasVworldKey: Boolean(process.env.VWORLD_API_KEY),
+      hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Location & Commercial Area Analysis Endpoint
+  app.post("/api/location/analyze", async (req, res) => {
+    try {
+      const { address, businessType, radius } = req.body;
+
+      if (!address || typeof address !== "string" || !address.trim()) {
+        return res.status(400).json({
+          error: "분석할 주소(도로명 또는 지번)를 입력해주세요.",
+        });
+      }
+
+      const client = getGeminiClient();
+      const vworldApiKey = process.env.VWORLD_API_KEY;
+      const dataGoKrServiceKey = process.env.DATA_GO_KR_SERVICE_KEY || process.env.PUBLIC_DATA_PORTAL_KEY;
+
+      const { analyzeLocation } = await import("./src/services/location/locationAnalysisService");
+
+      const result = await analyzeLocation(
+        address.trim(),
+        businessType || "카페",
+        Number(radius) || 500,
+        {
+          vworldApiKey,
+          dataGoKrServiceKey,
+          geminiClient: client,
+        }
+      );
+
+      return res.json(result);
+    } catch (err: any) {
+      console.error("Location analysis error:", err);
+      return res.status(500).json({
+        error: "주소지 및 상권 분석 중 오류가 발생했습니다.",
+        details: err?.message,
+      });
+    }
+  });
+
+  // Market Research API endpoint
+  app.post("/api/market-research", async (req, res) => {
+    try {
+      const { prompt, form } = req.body;
+      const client = getGeminiClient();
+
+      if (client && prompt) {
+        const response = await client.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: prompt,
+          config: {
+            temperature: 0.7,
+          },
+        });
+
+        return res.json({
+          report: response.text || "시장조사 보고서를 생성하지 못했습니다.",
+          source: "gemini-3.8-flash",
+        });
+      }
+
+      return res.status(503).json({
+        error: "AI 시장조사 모델이 준비되지 않았습니다.",
+      });
+    } catch (err: any) {
+      console.error("Market research error:", err);
+      return res.status(500).json({
+        error: "시장조사 처리 중 오류가 발생했습니다.",
+        details: err?.message,
+      });
+    }
+  });
+
   // Vite integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

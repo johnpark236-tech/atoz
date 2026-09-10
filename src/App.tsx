@@ -201,7 +201,15 @@ export default function App() {
           <WizardView onComplete={handleCompleteWizard} onCancel={() => setActiveTab('dashboard')} />
         )}
 
-        {activeTab === 'market' && <MarketResearchView project={activeProject} />}
+        {activeTab === 'market' && (
+          <MarketResearchView
+            project={activeProject}
+            onProjectUpdated={(updated) => {
+              setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+              showToast('점포 입지 분석 결과가 프로젝트에 저장되었습니다.');
+            }}
+          />
+        )}
 
         {activeTab === 'finance' && (
           <FinanceView

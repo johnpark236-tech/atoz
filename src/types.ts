@@ -72,6 +72,9 @@ export interface ProjectProfile {
   hasOverseasSales: string; // e.g., "없음" | "검토 중" | "있음"
 }
 
+import { LocationAnalysisRecord } from './services/location/types';
+export * from './services/location/types';
+
 export interface Project {
   id: string;
   title: string;
@@ -82,6 +85,7 @@ export interface Project {
   tasks: Task[];
   sales: SaleRecord[];
   documents: DocumentItem[];
+  locationAnalyses?: LocationAnalysisRecord[];
 }
 
 export type SaleStatus =

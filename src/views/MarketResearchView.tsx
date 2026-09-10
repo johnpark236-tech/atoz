@@ -9,10 +9,23 @@ import {
   AlertTriangle,
   Network,
   Globe2,
+import {
+  BarChart3,
+  Clipboard,
+  CheckCircle2,
+  Search,
+  Sparkles,
+  AlertTriangle,
+  Network,
+  Globe2,
+  MapPin,
 } from 'lucide-react';
+import { LocationAnalysisView } from './LocationAnalysisView';
 
 interface MarketResearchViewProps {
   project: Project;
+  onProjectUpdated?: (updated: Project) => void;
+  initialSubTab?: 'idea' | 'location';
 }
 
 interface ResearchForm {
@@ -247,7 +260,12 @@ B2B2C 예시:
 16. 추가 조사가 필요한 데이터 목록
 `;
 
-export const MarketResearchView: React.FC<MarketResearchViewProps> = ({ project }) => {
+export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
+  project,
+  onProjectUpdated,
+  initialSubTab = 'idea',
+}) => {
+  const [subTab, setSubTab] = useState<'idea' | 'location'>(initialSubTab);
   const [form, setForm] = useState<ResearchForm>({
     ideaName: project.title,
     ideaSummary: project.description,
@@ -358,12 +376,48 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({ project 
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-200 pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
-              <BarChart3 className="w-3.5 h-3.5" /> A to Z Market Research
-            </div>
+      {/* Sub-tab Navigation Bar */}
+      <div className="flex items-center justify-start gap-3 bg-white p-2 rounded-3xl border-2 border-slate-900 shadow-[3px_3px_0px_0px_rgba(15,23,42,1)]">
+        <button
+          type="button"
+          onClick={() => setSubTab('idea')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+            subTab === 'idea'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <BarChart3 className={`w-4 h-4 ${subTab === 'idea' ? 'text-blue-400' : 'text-slate-400'}`} />
+          <span>아이디어 시장조사</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSubTab('location')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all ${
+            subTab === 'location'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <MapPin className={`w-4 h-4 ${subTab === 'location' ? 'text-emerald-400' : 'text-slate-400'}`} />
+          <span>점포 입지 / 주소지 분석</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600">
+            신규
+          </span>
+        </button>
+      </div>
+
+      {subTab === 'location' ? (
+        <LocationAnalysisView project={project} onProjectUpdated={onProjectUpdated} />
+      ) : (
+        <>
+          <section className="bg-white rounded-[32px] border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] p-6 sm:p-8">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-slate-200 pb-6">
+              <div>
+                <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+                  <BarChart3 className="w-3.5 h-3.5" /> A to Z Market Research
+                </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-3 tracking-tight">
               아이디어 시장조사
             </h2>
@@ -547,6 +601,8 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({ project 
             </pre>
           </details>
         </section>
+      )}
+        </>
       )}
     </div>
   );
