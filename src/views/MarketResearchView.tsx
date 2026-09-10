@@ -258,6 +258,8 @@ export const MarketResearchView: React.FC<MarketResearchViewProps> = ({
   project,
   onProjectUpdated,
   initialSubTab = 'idea',
+  activeTabKey,
+  onSubTabChange,
 }) => {
   const [subTab, setSubTab] = useState<'idea' | 'location'>(initialSubTab);
   const [form, setForm] = useState<ResearchForm>({
